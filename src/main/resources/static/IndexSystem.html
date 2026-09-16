@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>数智系统界面</title>
+    <style>
+        /* 全局样式 */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #0d1b2a; /* 深蓝色星空背景 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 星星容器 */
+        .stars {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+        }
+
+        /* 星星样式 */
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            animation: twinkle 3s infinite;
+        }
+
+        /* 闪烁动画 */
+        @keyframes twinkle {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* 标题区域样式 */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeIn 2s ease-in-out, glow 1.5s ease-in-out infinite alternate;
+        }
+
+        /* 标题文字发光动画 */
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            }
+            to {
+                text-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 30px rgba(255, 255, 255, 0.8);
+            }
+        }
+
+        /* 标题文字渐显动画 */
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .p3 {
+            margin-bottom: 30px;
+            font-size: 120px;
+            font-weight: 700;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            /* 禁止文字选中 */
+            user-select: none;
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none;    /* Firefox */
+            -ms-user-select: none;     /* IE/Edge */
+        }
+
+        /*.contain {*/
+        /*    width: 90%;*/
+        /*    max-width: 1400px;*/
+        /*    margin: 0 auto;*/
+        /*}*/
+
+        .contain ul {
+            list-style-type: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .contain li {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .contain li:hover {
+            transform: translateY(-10px) scale(1.03);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: white;
+        }
+
+        .nav-img {
+            width: 250px;
+            height: 200px;
+            margin-bottom: 10px;
+            /*transition: transform 0.3s ease;*/
+        }
+
+        .nav-img2 {
+            width: 250px;
+            height: 200px;
+            margin-bottom: 10px;
+        }
+
+        .nav-text {
+            font-size: 20px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+            text-shadow:
+                    0 0 8px rgba(168, 216, 234, 0.6),
+                    0 0 15px rgba(168, 216, 234, 0.3);
+            position: relative;
+            display: inline-block;
+            padding-bottom: 5px;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            font-family: 'Poppins', sans-serif; /* 更现代的字体 */
+        }
+
+        .contain li:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .contain li:hover .nav-img {
+            transform: rotate(360deg);
+        }
+
+        #bigdataLink .nav-text {
+            background: linear-gradient(90deg, #a8d8ea, #00b4d8, #48cae4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: none;
+            animation: gradientGlow 3s ease infinite;
+            background-size: 200% auto;
+        }
+
+        #orderSystemLink .nav-text {
+            background: linear-gradient(90deg, #a8d8ea, #00b4d8, #48cae4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: none;
+            animation: gradientGlow 3s ease infinite;
+            background-size: 200% auto;
+        }
+
+        #adminSystemLink .nav-text {
+            background: linear-gradient(90deg, #a8d8ea, #00b4d8, #48cae4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: none;
+            animation: gradientGlow 3s ease infinite;
+            background-size: 200% auto;
+        }
+
+        #userControlLink .nav-text {
+            background: linear-gradient(90deg, #a8d8ea, #00b4d8, #48cae4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: none;
+            animation: gradientGlow 3s ease infinite;
+            background-size: 200% auto;
+        }
+
+        /* 为AI系统添加特殊效果 */
+        #aiSystemLink .nav-text {
+            background: linear-gradient(90deg, #a8d8ea, #00b4d8, #48cae4);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: none;
+            animation: gradientGlow 3s ease infinite;
+            background-size: 200% auto;
+        }
+
+
+        /* 退出按钮样式 */
+        .header-right {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        #logoutButton {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+
+        #logoutButton:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+
+    </style>
+</head>
+
+<body>
+<div class="header">
+    <p class="p3">数智系统</p>
+    <div class="header-right">
+        <button id="logoutButton">退出登录</button>
+    </div>
+</div>
+<div class="contain">
+    <ul>
+        <li>
+            <!-- 修改此处，使用 JavaScript 动态设置 href 属性 -->
+            <a href="#" id="bigdataLink" class="nav-link">
+                <img src="images/趋势预测专题.svg" alt="" class="nav-img">
+                <span class="nav-text">大数据展示系统</span>
+            </a>
+        </li>
+
+        <li>
+            <!-- 添加 id 属性 -->
+            <a href="#" id="orderSystemLink" class="nav-link">
+                <img src="images/数据采集.svg" alt="" class="nav-img">
+                <span class="nav-text">数据管理系统</span>
+            </a>
+        </li>
+<!--        <li>-->
+<!--            &lt;!&ndash; 添加 id 属性 &ndash;&gt;-->
+<!--            <a href="#" id="adminSystemLink" class="nav-link">-->
+<!--                <img src="images/趋势预测专题.svg" alt="" class="nav-img">-->
+<!--                <span class="nav-text">数据后台系统</span>-->
+<!--            </a>-->
+<!--        </li>-->
+
+        <li id="1">
+            <!-- 添加 id 属性 -->
+            <a href="#" id="userControlLink" class="nav-link">
+                <img src="images/用户管理.svg" alt="" class="nav-img">
+                <span class="nav-text">用户管理后台</span>
+            </a>
+        </li>
+        <li>
+            <a href="#" id="aiSystemLink" class="nav-link">
+                <img src="images/deepseek.svg" alt="智慧AI系统图标" class="nav-img2">
+                <span class="nav-text">智慧AI系统</span>
+            </a>
+        </li>
+    </ul>
+</div>
+
+<!-- 星空效果容器 -->
+<div class="stars" id="stars"></div>
+
+<script>
+    // 退出登录按钮点击事件
+    document.getElementById('logoutButton').addEventListener('click', function() {
+
+        window.location.href = 'login.html';
+    });
+    // 生成星星效果
+    function generateStars() {
+        const starsContainer = document.getElementById('stars');
+        const starCount = 100; // 星星数量，可调整
+
+        for (let i = 0; i < starCount; i++) {
+            const star = document.createElement('div');
+            star.classList.add('star');
+
+            // 随机大小、位置和动画延迟
+            const size = Math.random() * 3 + 1 + 'px'; // 星星大小在1-4px之间
+            const xPosition = Math.random() * 100 + '%';
+            const yPosition = Math.random() * 100 + '%';
+            const animationDuration = Math.random() * 2 + 2 + 's'; // 闪烁时间2-4秒
+            const animationDelay = Math.random() * 3 + 's';
+
+            star.style.width = size;
+            star.style.height = size;
+            star.style.left = xPosition;
+            star.style.top = yPosition;
+            star.style.animationDuration = animationDuration;
+            star.style.animationDelay = animationDelay;
+
+            starsContainer.appendChild(star);
+        }
+    }
+
+    // 调用生成星星函数
+    generateStars();
+
+    //获取页面参数
+    function getParameterByName(name, url = window.location.href) {
+        name = name.replace(/[\[\]]/g, '\\$&');
+        var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    }
+    var uroot = getParameterByName('uroot');
+
+    // // 非法登录校验
+    if (uroot == null) {
+        alert("非法登录");
+        window.location.href = "login.html"
+    }
+
+    // 跳转到大数据展示系统页面
+    const bigdataLink = document.getElementById('bigdataLink');
+    bigdataLink.href = `BigDataPresentationSystem.html?uroot=${uroot}`;
+
+    // 动态设置数据管理系统链接的 href 属性
+    const orderSystemLink = document.getElementById('orderSystemLink');
+    orderSystemLink.href = `DataAdministrationSystem.html?uroot=${uroot}`;
+
+    // // 动态设置数据展示系统链接的 href 属性
+    // const adminSystemLink = document.getElementById('adminSystemLink');
+    // adminSystemLink.href = `DataNebulaBackground.html?uroot=${uroot}`;
+
+    // // 动态设置用户管理后台链接的 href 属性
+    const userControlLink = document.getElementById('userControlLink');
+    userControlLink.href = `UserManagementSystem.html?uroot=${uroot}`;
+
+    // 动态设置智慧AI系统链接的 href 属性
+    const aiSystemLink = document.getElementById('aiSystemLink');
+    aiSystemLink.href = `AISystem.html?uroot=${uroot}`;
+
+    // 实现对于的按钮权限
+      if(uroot==1){
+          document.getElementById("1").style.display='none';
+      }
+</script>
+</body>
+
+</html>

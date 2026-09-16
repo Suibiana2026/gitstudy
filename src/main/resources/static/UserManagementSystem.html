@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <link rel="shortcut icon" href="../images/2.png" type="image/x-icon">
+  <!-- 定义文档的字符编码为 UTF-8，支持中文显示 -->
+  <meta charset="UTF-8">
+  <!-- 确保页面在移动设备上正常缩放，宽度设置为设备宽度 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 设置网页标题，显示在浏览器标签上 -->
+  <title>星云后台用户管理系统</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <style>
+    /* 定义全局 CSS 变量（自定义属性），方便在整个页面统一使用颜色和样式 */
+    :root {
+      --primary-color: #1890ff; /* 主要颜色，用于高亮和按钮（蓝色） */
+      --background: #0d1b2a; /* 整个页面的深色背景 */
+      --sidebar-bg: linear-gradient(135deg, #0d1b2a 0%, #1e3c72 100%); /* 侧边栏的渐变背景 */
+      --active-bg: rgba(24, 144, 255, 0.15); /* 激活或悬停时的背景颜色 */
+      --submenu-bg: rgba(255, 255, 255, 0.05); /* 子菜单的半透明背景 */
+      --text-primary: rgba(255, 255, 255, 0.95); /* 主要文字颜色（接近白色） */
+      --surface-1: rgba(255, 255, 255, 0.1); /* 面板的半透明表面颜色 */
+      --divider: rgba(255, 255, 255, 0.1); /* 分隔线和边框的颜色 */
+      --success: #52c41a; /* 成功状态的绿色 */
+      --error: #ff4d4f; /* 错误状态的红色 */
+      --radius-base: 12px; /* 标准的圆角大小 */
+      --transition-base: all 0.2s cubic-bezier(0.645, 0.045, 0.355, 1); /* 平滑的动画过渡效果 */
+    }
+
+    /* 重置所有元素的默认样式，确保布局一致 */
+    * {
+      margin: 0; /* 移除元素外的默认间距 */
+      padding: 0; /* 移除元素内的默认间距 */
+      box-sizing: border-box; /* 让边框和内边距包含在元素总大小内 */
+      font-family: 'HarmonyOS Sans', 'Segoe UI', system-ui, sans-serif; /* 设置现代字体，优先使用 HarmonyOS Sans */
+    }
+
+    /* 设置页面的整体样式，使用 flexbox 布局 */
+    body {
+      display: flex; /* 使用 flexbox 让侧边栏和内容并排显示 */
+      min-height: 100vh; /* 确保页面至少占满整个视窗高度 */
+      background: var(--background); /* 设置深色背景 */
+      overflow-x: hidden; /* 禁止水平滚动 */
+      position: relative; /* 让子元素可以相对页面定位 */
+    }
+
+    /* 侧边栏（左侧导航栏）的样式 */
+    .sidebar {
+      width: 250px; /* 侧边栏固定宽度 */
+      background: var(--sidebar-bg); /* 使用渐变背景 */
+      padding: 20px 0; /* 上下添加内边距 */
+      color: var(--text-primary); /* 文字颜色为接近白色 */
+      position: sticky; /* 让侧边栏在滚动时固定 */
+      top: 0; /* 固定在顶部 */
+      height: 100vh; /* 占满整个视窗高度 */
+      overflow-y: auto; /* 如果内容过多，允许垂直滚动 */
+      transition: width 0.3s; /* 宽度变化时平滑动画 */
+      border-radius: var(--radius-base); /* 圆角边框 */
+      backdrop-filter: blur(5px); /* 背景模糊效果 */
+      z-index: 5; /* 确保侧边栏在其他内容之上 */
+    }
+
+    /* 鼠标悬停时侧边栏稍微变宽 */
+    .sidebar:hover { width: 280px; }
+
+    /* 侧边栏内的导航菜单样式 */
+    .nav-menu { padding: 8px 0; /* 上下内边距 */ }
+
+    /* 单个导航项的样式 */
+    .nav-item {
+      margin: 2px 12px; /* 导航项周围的间距 */
+      border-radius: var(--radius-base); /* 圆角边框 */
+      transition: var(--transition-base); /* 平滑动画效果 */
+      overflow: hidden; /* 确保内容不会溢出 */
+      border: 1px solid transparent; /* 默认透明边框 */
+    }
+
+    /* 鼠标悬停时显示边框 */
+    .nav-item:hover { border-color: var(--divider); }
+
+    /* 当前激活的导航项样式 */
+    .nav-item.active {
+      background: var(--active-bg); /* 浅蓝色背景 */
+      border-color: var(--primary-color); /* 蓝色边框 */
+    }
+
+    /* 导航项标题的样式 */
+    .menu-header {
+      display: flex; /* 使用 flexbox 排列内容 */
+      align-items: center; /* 垂直居中 */
+      padding: 12px 24px; /* 内边距 */
+      font-size: 15px; /* 字体大小 */
+      gap: 12px; /* 元素间距 */
+      cursor: pointer; /* 鼠标悬停时显示手型 */
+      background: linear-gradient(to right, transparent 0%, transparent 90%, rgba(255, 255, 255, 0.03) 100%); /* 微弱渐变背景 */
+      border-radius: var(--radius-base); /* 圆角边框 */
+    }
+
+    /* 在激活的导航项左侧添加蓝色垂直线（使用伪元素） */
+    .menu-header::after {
+      content: ''; /* 伪元素内容为空 */
+      position: absolute; /* 相对父元素定位 */
+      left: 0; /* 靠左对齐 */
+      top: 0; /* 靠顶对齐 */
+      height: 100%; /* 占满父元素高度 */
+      width: 3px; /* 线条宽度 */
+      background: var(--primary-color); /* 蓝色 */
+      transform: scaleY(0); /* 默认隐藏（高度缩放到0） */
+      transition: transform 0.3s ease; /* 平滑显示动画 */
+    }
+
+    /* 激活时显示蓝色线条 */
+    .nav-item.active .menu-header::after { transform: scaleY(1); /* 高度恢复为1，显示线条 */ }
+
+    /* 子菜单（导航项下的下拉菜单）样式 */
+    .submenu {
+      max-height: 0; /* 默认收起（高度为0） */
+      overflow: hidden; /* 隐藏超出内容 */
+      transition: max-height 0.4s cubic-bezier(0.22, 0.61, 0.36, 1); /* 平滑展开动画 */
+      background: rgba(0, 0, 0, 0.15); /* 稍深的背景色 */
+      margin: 4px 0; /* 上下间距 */
+      border-radius: 0 0 var(--radius-base) var(--radius-base); /* 底部圆角 */
+    }
+
+    /* 子菜单项的样式 */
+    .submenu-item {
+      padding: 10px 24px 10px 48px; /* 内边距，左侧更多以缩进 */
+      font-size: 14px; /* 稍小的字体 */
+      opacity: 0.85; /* 文字稍透明 */
+      transition: var(--transition-base); /* 平滑动画 */
+      cursor: pointer; /* 鼠标悬停显示手型 */
+      border-radius: var(--radius-base); /* 圆角边框 */
+    }
+
+    /* 鼠标悬停时增强子菜单项效果 */
+    .submenu-item:hover {
+      background: var(--submenu-bg); /* 浅色背景 */
+      opacity: 1; /* 文字完全不透明 */
+      padding-left: 52px; /* 向右移动一点 */
+      transform: translateX(4px); /* 轻微右移效果 */
+    }
+
+    /* 主内容区域（右侧）的样式 */
+    .main-content {
+      flex: 1; /* 占满侧边栏外的剩余空间 */
+      padding: 32px; /* 内边距 */
+      min-height: 100vh; /* 占满视窗高度 */
+      background: var(--sidebar-bg); /* 与侧边栏相同的渐变背景 */
+      border-radius: var(--radius-base); /* 圆角边框 */
+      box-shadow: 0 4px 24px -12px rgba(0, 0, 0, 0.08); /* 微弱阴影增加深度 */
+      backdrop-filter: blur(5px); /* 背景模糊效果 */
+      z-index: 5; /* 确保在其他元素之上 */
+    }
+
+    /* 主内容顶部标题区域的样式 */
+    .header {
+      margin-bottom: 32px; /* 下方间距 */
+      text-align: center; /* 文字居中 */
+    }
+
+    /* 主标题的样式 */
+    .header h1 {
+      font-size: 32px; /* 大字体 */
+      color: var(--primary-color); /* 蓝色文字 */
+      text-transform: uppercase; /* 全部大写 */
+      animation: breathing 2s ease-in-out infinite; /* 呼吸动画效果 */
+      text-shadow: 0 0 5px rgba(24, 144, 255, 0.5); /* 微弱蓝色阴影 */
+    }
+
+    /* 定义标题的“呼吸”动画 */
+    @keyframes breathing {
+      0% { text-shadow: 0 0 5px rgba(24, 144, 255, 0.5); } /* 开始时的阴影 */
+      50% { text-shadow: 0 0 20px rgba(24, 144, 255, 0.8), 0 0 30px rgba(24, 144, 255, 0.5); } /* 中间增强阴影 */
+      100% { text-shadow: 0 0 5px rgba(24, 144, 255, 0.5); } /* 回到初始状态 */
+    }
+
+    /* 用户管理面板的样式 */
+    .integrated-panel {
+      display: grid; /* 使用网格布局 */
+      grid-template-columns: 2fr 1fr; /* 两列：左侧占2份，右侧占1份 */
+      gap: 24px; /* 列间距 */
+      background: var(--surface-1); /* 半透明背景 */
+      padding: 24px; /* 内边距 */
+      border-radius: var(--radius-base); /* 圆角边框 */
+      border: 1px solid var(--divider); /* 细边框 */
+      box-shadow: 0 4px 24px -12px rgba(0, 0, 0, 0.08); /* 微弱阴影 */
+      backdrop-filter: blur(5px); /* 背景模糊 */
+      transition: var(--transition-base); /* 平滑动画 */
+      animation: fadeIn 0.5s ease; /* 加载时淡入动画 */
+    }
+
+    /* 定义面板的淡入动画 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); } /* 从不可见到向下偏移 */
+      to { opacity: 1; transform: translateY(0); } /* 到完全可见并回到原位 */
+    }
+
+    /* 面板内各部分的样式 */
+    .section {
+      padding: 16px; /* 内边距 */
+      border-radius: 8px; /* 稍小的圆角 */
+      background: rgba(255, 255, 255, 0.05); /* 浅色背景 */
+    }
+
+    /* 用户表和权限表的滚动容器样式 */
+    .user-table-wrapper, .permission-table-wrapper {
+      max-height: 500px; /* 最大高度，超出则滚动 */
+      overflow-y: auto; /* 允许垂直滚动 */
+      margin-bottom: 16px; /* 下方间距 */
+      position: relative; /* 允许子元素相对定位 */
+      scroll-behavior: smooth; /* 平滑滚动效果 */
+      -webkit-overflow-scrolling: touch; /* 优化移动端滚动 */
+      scrollbar-width: thin; /* 细滚动条（Firefox） */
+      scrollbar-color: var(--primary-color) var(--surface-1); /* 自定义滚动条颜色 */
+
+    }
+
+    /* Webkit 浏览器（Chrome、Safari）的滚动条样式 */
+    .user-table-wrapper::-webkit-scrollbar,
+    .permission-table-wrapper::-webkit-scrollbar {
+      width: 8px; /* 滚动条宽度 */
+    }
+
+    .user-table-wrapper::-webkit-scrollbar-track,
+    .permission-table-wrapper::-webkit-scrollbar-track {
+      background: var(--surface-1); /* 滚动条轨道颜色 */
+      border-radius: var(--radius-base); /* 圆角 */
+    }
+
+    .user-table-wrapper::-webkit-scrollbar-thumb,
+    .permission-table-wrapper::-webkit-scrollbar-thumb {
+      background: var(--primary-color); /* 滚动条滑块颜色（蓝色） */
+      border-radius: var(--radius-base); /* 圆角 */
+    }
+
+    /* 表单组（标签+输入框/选择框）的样式 */
+    .form-group {
+      display: flex; /* 横向排列标签和输入框 */
+      align-items: center; /* 垂直居中 */
+      gap: 12px; /* 标签和输入框间距 */
+      margin: 12px 0; /* 上下间距 */
+    }
+
+    /* 表单组内标签的样式 */
+    .form-group label {
+      color: var(--text-primary); /* 接近白色 */
+      min-width: 60px; /* 确保标签宽度一致 */
+      opacity: 0.95; /* 稍透明 */
+    }
+
+    /* 表单组内输入框和选择框的样式 */
+    .form-group input, .form-group select {
+      flex: 1; /* 占满剩余空间 */
+      padding: 8px; /* 内边距 */
+      background: rgba(255, 255, 255, 0.05); /* 浅色背景 */
+      border: 1px solid var(--divider); /* 细边框 */
+      color: var(--text-primary); /* 接近白色文字 */
+      border-radius: var(--radius-base); /* 圆角 */
+      transition: var(--transition-base); /* 平滑动画 */
+    }
+
+    /* 输入框和选择框聚焦时的样式 */
+    .form-group input:focus, .form-group select:focus {
+      outline: none; /* 移除默认聚焦边框 */
+      border-color: var(--primary-color); /* 蓝色边框 */
+      box-shadow: 0 0 10px rgba(24, 144, 255, 0.3); /* 蓝色光晕 */
+      /* 新增或修改的样式 */
+      box-shadow: 0 0 10px rgba(24, 144, 255, 0.3), 0 0 5px rgba(24, 144, 255, 0.1); /* 更明显的聚焦效果 */
+      transform: translateY(-1px); /* 轻微上移效果 */
+    }
+
+
+    /* 选择框的自定义下拉箭头样式 */
+    .form-group select {
+      appearance: none; /* 移除默认下拉箭头 */
+      background-image: linear-gradient(45deg, transparent 50%, var(--primary-color) 50%),
+      linear-gradient(135deg, var(--primary-color) 50%, transparent 50%); /* 自定义箭头图案 */
+      background-position: calc(100% - 20px) center, calc(100% - 15px) center; /* 箭头位置 */
+      background-size: 5px 5px, 5px 5px; /* 箭头大小 */
+      background-repeat: no-repeat; /* 不重复背景 */
+      cursor: pointer; /* 鼠标悬停显示手型 */
+      padding: 8px; /* 内边距 */
+      background: rgba(255, 255, 255, 0.05); /* 浅色背景 */
+      border: 1px solid var(--divider); /* 细边框 */
+      color: var(--text-primary); /* 接近白色文字 */
+      border-radius: var(--radius-base); /* 圆角 */
+      transition: var(--transition-base); /* 平滑动画 */
+      /* 新增或修改的样式 */
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1); /* 添加轻微阴影 */
+      outline: none; /* 移除默认聚焦轮廓 */
+      font-size: 14px; /* 设置字体大小 */
+      line-height: 1.5; /* 设置行高 */
+    }
+
+    /* 按钮的样式 */
+    .btn {
+      padding: 8px 16px; /* 内边距 */
+      background: var(--primary-color); /* 蓝色背景 */
+      border: none; /* 无边框 */
+      color: var(--text-primary); /* 接近白色文字 */
+      border-radius: var(--radius-base); /* 圆角 */
+      cursor: pointer; /* 鼠标悬停显示手型 */
+      transition: var(--transition-base); /* 平滑动画 */
+      font-weight: 600; /* 稍粗的字体 */
+      text-decoration: none; /* 去掉下划线 */
+    }
+
+    /* 按钮悬停时的样式 */
+    .btn:hover {
+      background: #40a9ff; /* 更亮的蓝色 */
+      transform: translateY(-2px); /* 向上移动一点 */
+      box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3); /* 添加阴影 */
+    }
+
+    /* 用户表和权限表的样式 */
+    table {
+      width: 100%; /* 占满宽度 */
+      border-collapse: separate; /* 允许行间距 */
+      border-spacing: 0 6px; /* 行间距 */
+      color: var(--text-primary); /* 接近白色文字 */
+    }
+
+    /* 表头和单元格的样式 */
+    th, td {
+      padding: 12px; /* 内边距 */
+      text-align: left; /* 左对齐 */
+    }
+
+    /* 表头的样式 */
+    th {
+      background: var(--active-bg); /* 浅蓝色背景 */
+      border-bottom: 1px solid var(--divider); /* 下方细边框 */
+      font-weight: 600; /* 粗体 */
+    }
+
+    /* 表格行的样式 */
+    tr {
+      background: rgba(255, 255, 255, 0.05); /* 浅色背景 */
+      transition: var(--transition-base); /* 平滑动画 */
+      border-radius: var(--radius-base); /* 圆角 */
+    }
+
+    /* 表格行悬停时的样式 */
+    tr:hover {
+      background: var(--active-bg); /* 浅蓝色背景 */
+      transform: translateY(-2px); /* 向上移动一点 */
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 添加阴影 */
+    }
+
+    /* 权限列表的样式 */
+    .permission-list {
+      display: flex; /* 横向排列权限标签 */
+      flex-wrap: wrap; /* 如果空间不够，换行 */
+      gap: 6px; /* 标签间距 */
+    }
+
+    /* 单个权限标签的样式 */
+    .permission-tag {
+      padding: 3px 6px; /* 内边距 */
+      background: var(--active-bg); /* 浅蓝色背景 */
+      border-radius: 4px; /* 小圆角 */
+      font-size: 11px; /* 小字体 */
+    }
+
+    /* 响应式设计：在小屏幕（小于768px）时的调整 */
+    @media (max-width: 768px) {
+      body { flex-direction: column; } /* 侧边栏和内容垂直排列 */
+      .sidebar { width: 100%; height: auto; position: relative; } /* 侧边栏占满宽度 */
+      .main-content { padding: 16px; } /* 减少内边距 */
+      .integrated-panel { grid-template-columns: 1fr; } /* 单列布局 */
+      .user-table-wrapper, .permission-table-wrapper { max-height: 200px; } /* 表格高度减少 */
+    }
+
+    /* 模态框遮罩层（弹出窗口背景）的样式 */
+    .modal-overlay {
+      position: fixed; /* 固定在屏幕上 */
+      top: 0; left: 0; right: 0; bottom: 0; /* 占满整个屏幕 */
+      background: rgba(0, 0, 0, 0.7); /* 半透明黑色 */
+      display: flex; /* 居中显示模态框 */
+      justify-content: center; align-items: center; /* 水平和垂直居中 */
+      z-index: 1000; /* 确保在最上层 */
+      opacity: 0; /* 默认不可见 */
+      transition: opacity 0.3s ease; /* 平滑淡入淡出 */
+      pointer-events: none; /* 隐藏时不可点击 */
+    }
+
+    /* 激活时的模态框遮罩层样式 */
+    .modal-overlay.active {
+      opacity: 1; /* 完全可见 */
+      pointer-events: all; /* 允许交互 */
+    }
+
+    /* 模态框本身的样式 */
+    .modal {
+      background: var(--surface-1); /* 半透明背景 */
+      padding: 24px; /* 内边距 */
+      border-radius: var(--radius-base); /* 圆角 */
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* 较强的阴影 */
+      backdrop-filter: blur(5px); /* 背景模糊 */
+      min-width: 300px; /* 最小宽度 */
+      max-width: 90%; /* 避免在小屏幕上溢出 */
+      transform: scale(0.7); /* 默认缩小 */
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* 平滑放大动画 */
+      border: 1px solid var(--divider); /* 细边框 */
+    }
+
+    /* 激活时模态框放大到正常大小 */
+    .modal-overlay.active .modal {
+      transform: scale(1); /* 正常大小 */
+    }
+
+    /* 模态框标题的样式 */
+    .modal-title {
+      color: var(--primary-color); /* 蓝色文字 */
+      font-size: 20px; /* 较大字体 */
+      margin-bottom: 16px; /* 下方间距 */
+      text-align: center; /* 居中 */
+    }
+
+    /* 模态框内容的样式 */
+    .modal-content {
+      color: var(--text-primary); /* 接近白色文字 */
+      margin-bottom: 24px; /* 下方间距 */
+      text-align: center; /* 居中 */
+      font-size: 16px; /* 标准字体 */
+    }
+
+    /* 模态框按钮容器的样式 */
+    .modal-buttons {
+      display: flex; /* 横向排列按钮 */
+      justify-content: center; /* 居中 */
+      gap: 16px; /* 按钮间距 */
+    }
+
+    /* 模态框内按钮的样式 */
+    .modal-btn {
+      padding: 8px 16px; /* 内边距 */
+      background: var(--primary-color); /* 蓝色背景 */
+      border: none; /* 无边框 */
+      color: var(--text-primary); /* 接近白色文字 */
+      border-radius: var(--radius-base); /* 圆角 */
+      cursor: pointer; /* 鼠标悬停显示手型 */
+      transition: var(--transition-base); /* 平滑动画 */
+      font-weight: 600; /* 稍粗字体 */
+    }
+
+    /* 模态框按钮悬停时的样式 */
+    .modal-btn:hover {
+      background: #40a9ff; /* 更亮的蓝色 */
+      transform: translateY(-2px); /* 向上移动一点 */
+      box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3); /* 添加阴影 */
+    }
+
+    /* 表单组内选择框的选项样式 */
+    .form-group select option {
+      background: var(--background); /* 使用深色背景 */
+      color: var(--text-primary); /* 使用接近白色的文字颜色 */
+      /* 新增或修改的样式 */
+      padding: 8px 12px; /* 增加选项内边距 */
+    }
+
+    .header {
+      margin-bottom: 32px; /* 下方间距 */
+      text-align: center; /* 文字居中 */
+      position: relative; /* 为子元素的绝对定位提供参考 */
+    }
+
+    .header-actions {
+      position: absolute;
+      top: 0;
+      right: 0;
+    }
+  </style>
+</head>
+<body>
+<!-- 左侧侧边栏导航 -->
+<nav class="sidebar">
+  <div class="nav-menu">
+    <!-- 单个导航项（用户管理中心） -->
+    <div class="nav-item active">
+      <div class="menu-header">用户管理中心</div> <!-- 导航项标题 -->
+      <div class="submenu">
+        <!-- 子菜单项，链接到综合管理面板 -->
+        <div class="submenu-item" data-tab="integrated">综合管理</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- 右侧主内容区域 -->
+<div class="main-content">
+  <div class="header">
+    <h1>用户管理系统</h1> <!-- 主标题，带有动画 -->
+    <div class="header-actions">
+      <a href="IndexSystem.html" class="btn">返回主页面</a>
+    </div>
+  </div>
+
+  <!-- 综合管理面板，包含用户列表和表单 -->
+  <div id="integrated" class="integrated-panel">
+    <!-- 左侧部分：用户列表和权限查看 -->
+    <div class="section">
+      <h2 style="color: var(--primary-color); margin-bottom: 16px;">用户列表</h2> <!-- 部分标题 -->
+      <!-- 用户表的滚动容器 -->
+      <div class="user-table-wrapper">
+        <table>
+          <thead>
+          <tr>
+            <!--            <th>ID</th> &lt;!&ndash; 列标题 &ndash;&gt;-->
+            <th>用户名</th>
+            <th>密码</th>
+            <th>邮箱</th>
+            <th>角色</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+          </thead>
+          <tbody id="user-table"></tbody> <!-- 表格主体，由 JavaScript 填充 -->
+        </table>
+      </div>
+    </div>
+
+
+
+    <!-- 右侧部分：添加用户和权限管理的表单 -->
+    <div class="section">
+      <h2 style="color: var(--primary-color); margin-bottom: 16px;">添加用户</h2> <!-- 添加用户标题 -->
+      <!-- 用户名输入框组 -->
+      <div class="form-group">
+        <label>用户名:</label>
+        <input type="text" id="username" required> <!-- 文本输入框 -->
+      </div>
+      <!-- 邮箱输入框组 -->
+      <div class="form-group">
+        <label>邮箱:</label>
+        <input type="email" id="email" required> <!-- 邮箱输入框 -->
+      </div>
+      <!-- 密码输入框组 -->
+      <div class="form-group">
+        <label>密码:</label>
+        <input type="password" id="password" required> <!-- 密码输入框 -->
+      </div>
+      <!-- 角色选择框组 -->
+      <div class="form-group">
+        <label>角色:</label>
+        <select id="role"> <!-- 下拉菜单 -->
+          <option value="">请选择角色</option> <!-- 添加空选项 -->
+          <option value="1">普通用户</option> <!-- 普通用户选项 -->
+          <option value="0">管理员</option> <!-- 管理员选项 -->
+        </select>
+      </div>
+      <!-- 添加用户按钮 -->
+      <button class="btn" onclick="addUser()">添加用户</button>
+
+      <h2 style="color: var(--primary-color); margin-bottom: 16px;">更新用户信息</h2>
+      <div class="form-group">
+        <label></label>
+        <input type="text" id="uid" required style="display: none">
+      </div>
+      <div class="form-group">
+        <label>新邮箱:</label>
+        <input type="email" id="uemail" required>
+      </div>
+      <div class="form-group">
+        <label>新密码:</label>
+        <input type="password" id="upass" required>
+      </div>
+      <div class="form-group">
+        <label>新角色:</label>
+        <select id="uroot">
+          <option value="">请选择角色</option>
+          <option value="1">普通用户</option>
+          <option value="0">管理员</option>
+        </select>
+      </div>
+      <button class="btn" onclick="updateUserInfo()">更新</button>
+    </div>
+  </div>
+
+  <!-- 模态框容器，用于显示提示信息 -->
+  <div id="modal-container" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-title" id="modal-title"></div> <!-- 模态框标题，由 JavaScript 设置 -->
+      <div class="modal-content" id="modal-content"></div> <!-- 模态框内容，由 JavaScript 设置 -->
+      <div class="modal-buttons" id="modal-buttons"></div> <!-- 模态框按钮，由 JavaScript 设置 -->
+    </div>
+  </div>
+
+  <script>
+
+
+    /* 函数：显示自定义模态框，带标题和内容 */
+    function showAlert(title, content) {
+      const modalOverlay = document.getElementById('modal-container'); // 获取模态框容器
+      const modalTitle = document.getElementById('modal-title'); // 获取标题元素
+      const modalContent = document.getElementById('modal-content'); // 获取内容元素
+      const modalButtons = document.getElementById('modal-buttons'); // 获取按钮容器
+
+      modalTitle.textContent = title; // 设置标题文字
+      modalContent.textContent = content; // 设置内容文字
+      modalButtons.innerHTML = ''; // 清空之前的按钮
+
+      return new Promise((resolve) => { // 返回一个 Promise，用于处理模态框关闭
+        const okBtn = document.createElement('button'); // 创建“确定”按钮
+        okBtn.textContent = '确定'; // 设置按钮文字
+        okBtn.className = 'modal-btn'; // 应用按钮样式
+        okBtn.onclick = () => { // 点击按钮时执行
+          modalOverlay.classList.remove('active'); // 隐藏模态框
+          resolve(true); // Promise 完成，返回 true
+        };
+        modalButtons.appendChild(okBtn); // 将按钮添加到模态框
+
+        requestAnimationFrame(() => { // 确保模态框平滑显示
+          modalOverlay.classList.add('active'); // 显示模态框
+        });
+      });
+    }
+
+    /* 类：管理表格的自动滚动 */
+    /* 类：管理表格的自动滚动 */
+    class ScrollManager {
+      constructor(wrapper, tbodyId) {
+        this.wrapper = wrapper;
+        this.tbodyId = tbodyId;
+        this.animationFrame = null;
+        this.direction = -1;
+        this.isPaused = false;
+        this.calculateScrollSpeed();
+      }
+
+      calculateScrollSpeed() {
+        const maxScroll = this.wrapper.scrollHeight - this.wrapper.clientHeight;
+        if (maxScroll > 0) {
+          this.scrollSpeed = Math.min(maxScroll / 1000, 1);
+        } else {
+          this.scrollSpeed = 0;
+        }
+      }
+
+      start() {
+        // 这里不执行任何操作，禁止自动滚动
+      }
+
+      stop() {
+        if (this.animationFrame) {
+          cancelAnimationFrame(this.animationFrame);
+          this.animationFrame = null;
+        }
+      }
+
+      pause() {
+        this.isPaused = true;
+      }
+
+      resume() {
+        this.isPaused = false;
+        if (!this.animationFrame) this.scroll();
+      }
+
+      scroll() {
+        if (this.isPaused) return;
+
+        const maxScroll = this.wrapper.scrollHeight - this.wrapper.clientHeight;
+        if (maxScroll <= 0) return;
+
+        this.wrapper.scrollTop += this.scrollSpeed * this.direction;
+
+        if (this.wrapper.scrollTop >= maxScroll) {
+          this.direction = -1;
+        } else if (this.wrapper.scrollTop <= 0) {
+          this.direction = 1;
+        }
+
+        this.animationFrame = requestAnimationFrame(() => this.scroll());
+      }
+
+      shouldAutoScroll(searchId) {
+        return!searchId && users.length > 5 && this.wrapper.scrollHeight > this.wrapper.clientHeight;
+      }
+    }
+
+    /* 类：管理侧边栏导航行为 */
+    class SidebarUI {
+      constructor() { // 构造函数，初始化侧边栏
+        this.navItems = document.querySelectorAll('.nav-item'); // 获取所有导航项
+        this.submenuItems = document.querySelectorAll('.submenu-item'); // 获取所有子菜单项
+        this.initNavigation = this.initNavigation.bind(this); // 绑定导航初始化函数
+        this.initNavigation(); // 初始化导航
+        this.showDefaultContent(); // 显示默认内容
+      }
+
+      initNavigation() { // 设置导航点击事件
+        this.navItems.forEach(item => { // 遍历每个导航项
+          const header = item.querySelector('.menu-header'); // 获取标题元素
+          if (header) {
+            header.addEventListener('click', (e) => { // 添加点击事件
+              e.stopPropagation(); // 阻止事件冒泡
+              this.toggleNavItem(item); // 切换导航项状态
+            });
+          }
+        });
+
+        this.submenuItems.forEach(item => { // 遍历每个子菜单项
+          item.addEventListener('click', (e) => { // 添加点击事件
+            e.stopPropagation(); // 阻止事件冒泡
+            this.showContent(item.dataset.tab); // 显示对应内容
+          });
+        });
+      }
+
+      toggleNavItem(targetItem) { // 切换导航项的激活状态
+        const wasActive = targetItem.classList.contains('active'); // 检查是否已激活
+        this.navItems.forEach(item => { // 遍历所有导航项
+          if (item !== targetItem) { // 如果不是当前点击的项
+            item.classList.remove('active'); // 取消激活
+            this.collapseSubmenu(item); // 收起子菜单
+          }
+        });
+        targetItem.classList.toggle('active', !wasActive); // 切换目标项的激活状态
+        if (!wasActive) this.expandSubmenu(targetItem); // 如果激活，展开子菜单
+        else this.collapseSubmenu(targetItem); // 如果取消激活，收起子菜单
+      }
+
+      expandSubmenu(item) { // 展开子菜单
+        const submenu = item.querySelector('.submenu'); // 获取子菜单
+        if (submenu) submenu.style.maxHeight = submenu.scrollHeight + 'px'; // 设置高度以显示
+      }
+
+      collapseSubmenu(item) { // 收起子菜单
+        const submenu = item.querySelector('.submenu'); // 获取子菜单
+        if (submenu) submenu.style.maxHeight = '0'; // 隐藏子菜单
+      }
+
+      showContent(tabId) { // 显示对应的内容面板
+        document.querySelectorAll('.integrated-panel').forEach(content => { // 遍历所有面板
+          content.style.display = content.id === tabId ? 'grid' : 'none'; // 显示匹配的面板
+        });
+        updatePermissionTable(); // 更新权限表
+      }
+
+      showDefaultContent() { // 显示默认内容
+        this.showContent('integrated'); // 显示“综合管理”面板
+        this.expandSubmenu(document.querySelector('.nav-item')); // 展开第一个导航项的子菜单
+      }
+    }
+
+    /* 添加用户功能 */
+    /* 添加用户功能 */
+    /* 添加用户功能 */
+    // 函数：添加用户
+    async function addUser() {
+      var username = document.getElementById('username').value;
+      var email = document.getElementById('email').value;
+      var password = document.getElementById('password').value;
+      var role = document.getElementById('role').value;
+
+      if (!username ||!email ||!password || role === "") {
+        await showAlert('错误', '请填写所有必填项！');
+        return;
+      }
+
+      var emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) {
+        await showAlert('错误', '请输入有效的邮箱地址！');
+        return;
+      }
+
+      var passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,}$/;
+      if (!passwordRegex.test(password)) {
+        await showAlert('错误', '密码必须至少6位，且包含字母、数字和特殊字符！');
+        return;
+      }
+
+      const newUser = {
+        id: users.length + 1,
+        username,
+        email,
+        password,
+        role,
+        status: 'active',
+        permissions: role === 'admin'? { edit: true, delete: true, add: true } : { edit: false, delete: false, add: false }
+      };
+
+      users.push(newUser);
+      requestAnimationFrame(() => {
+        updateUserTable();
+      });
+
+      console.log("注册信息:", { uname: username, upass: password, email: email, uroot: role });
+      $.ajax({
+        type: 'post', // 修改为 POST 请求
+        async: true,
+        url: 'http://localhost:8080/insertUserInfou',
+        dataType: 'json',
+        data: { uname: username, upass: password, email: email, uroot: role },
+        success: function (data) {
+          console.log("后端返回的注册数据:", data);
+          if (data == 1) {
+            showAlert('成功', '恭喜，插入成功');
+            document.getElementById('role').value = '';
+            document.getElementById('username').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+            // 发送消息给服务器，告知有新用户添加
+            socket.send(JSON.stringify({ action: 'newUserAdded' }));
+          } else if (data == 2) {
+            showAlert('错误', '用户名已存在');
+          } else {
+            showAlert('错误', '插入失败，请稍后重试');
+          }
+        },
+        error: function () {
+          showAlert('错误', '插入请求失败，请检查网络');
+        }
+      });
+    }
+
+    /*  /!* 清空添加用户表单 *!/
+      function clearAddUserForm() {
+        document.getElementById('username').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('role').value = 'user';
+      }
+      function pollForUserList() {
+        setInterval(async () => {
+          try {
+            const response = await fetch('http://localhost:8080/select');
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const newUsers = await response.json();
+            const tbody = document.getElementById('user-table');
+            tbody.innerHTML = '';
+            newUsers.forEach(user => {
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                      <td>${user.uid}</td>
+                      <td>${user.uname}</td>
+                      <td>${user.upass}</td>
+                      <td>${user.email}</td>
+                      <td>${user.uroot}</td>
+                      <td><span style="color: ${use
+                      r.status? 'var(--success)' : 'var(--error)'};">
+                      ${user.status? '激活' : '停用'}</span></td>
+                      <td>
+                      <button class="btn" onclick="toggleUserStatus(${user.uid}, ${user.status})" style="margin - right: 8px;">
+                          ${user.status? '停用' : '激活'}</button>
+                          <button class="btn" onclick="deleteUser(${user.uid})">删除</button>
+                      </td>`;
+              tbody.appendChild(tr);
+            });
+            // 更新 users 数组
+            users = newUsers;
+          } catch (error) {
+            console.error('Error fetching user data:', error);
+          }
+        }, 5000);
+      }
+      // 页面加载完成后开始轮询
+      document.addEventListener('DOMContentLoaded', () => {
+        pollForUserList();
+      });*/
+
+    /*// 页面同步
+    async function longPollForUserList() {
+      while (true) {
+        try {
+          const response = await fetch('http://localhost:8080/select?longPoll=true');
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const newUsers = await response.json();
+          const tbody = document.getElementById('user-table');
+          tbody.innerHTML = '';
+          newUsers.forEach(user => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                      <td>${user.uid}</td>
+                      <td>${user.uname}</td>
+                      <td>${user.upass}</td>
+                      <td>${user.email}</td>
+                      <td>${user.uroot}</td>
+                      <td><span style="color: ${user.status? 'var(--success)' : 'var(--error)'};">
+                      ${user.status? '激活' : '停用'}</span></td>
+                      <td>
+                      <button class="btn" onclick="toggleUserStatus(${user.uid}, ${user.status})" style="margin - right: 8px;">
+                          ${user.status? '停用' : '激活'}</button>
+                          <button class="btn" onclick="deleteUser(${user.uid})">删除</button>
+                      </td>`;
+            tbody.appendChild(tr);
+          });
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+        // 处理完响应后立即再次发起请求
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+    // 页面加载完成后开始长轮询
+    document.addEventListener('DOMContentLoaded', () => {
+      longPollForUserList();
+    });*/
+
+    /* 函数：更新用户表 */
+    /* 函数：更新用户表 */
+    async function updateUserTable(searchId = null) {
+      const tbody = document.getElementById('user-table');
+      const wrapper = document.querySelector('.user-table-wrapper');
+      const scrollManager = wrapper.scrollManager || (wrapper.scrollManager = new ScrollManager(wrapper, 'user-table'));
+
+      const fragment = document.createDocumentFragment();
+      try {
+        let url = 'http://localhost:8080/select';
+        if (searchId) {
+          url += `?id=${searchId}`;
+        }
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const displayUsers = await response.json();
+
+        tbody.innerHTML = '';
+        displayUsers.forEach(user => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+                <td>${user.uname}</td>
+                <td>${user.upass}</td>
+                <td>${user.email}</td>
+                <td>${user.uroot}</td>
+                <td><span style="color: ${user.status ? 'var(--success)' : 'var(--error)'};">
+               ${user.status ? '激活' : '停用'}</span></td>
+              <td>
+               <button class="btn" onclick="toggleUserStatus(${user.uid}, ${user.status})" style="margin-right: 8px;">
+                  ${user.status ? '停用' : '激活'}</button>
+                    <button class="btn" onclick="deleteUser(${user.uid})">删除</button>
+              </td>`;
+
+          // 添加事件监听器，排除操作列的按钮
+          tr.addEventListener('click', (event) => {
+            if (event.target.tagName.toLowerCase() === 'button') {
+              return; // 如果点击的是按钮，则不执行后续代码
+            }
+            // 将当前行的用户数据赋值给更新用户信息的文本框
+            document.getElementById('uid').value = user.uid;
+            document.getElementById('uemail').value = user.email;
+            document.getElementById('upass').value = user.upass;
+            document.getElementById('uroot').value = user.uroot;
+          });
+
+          fragment.appendChild(tr);
+        });
+
+        tbody.appendChild(fragment);
+
+        if (scrollManager.shouldAutoScroll(searchId)) {
+          wrapper.style.overflowY = 'auto';
+          // 这里不再调用 scrollManager.start()
+        } else {
+          wrapper.style.overflowY = 'auto';
+          scrollManager.stop();
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    }
+
+
+
+    /* 函数：更新权限表 */
+    async function updatePermissionTable(searchId = null) {
+      const tbody = document.getElementById('permission-table');
+      const wrapper = document.querySelector('.permission-table-wrapper');
+      if (wrapper) {
+        const scrollManager = wrapper.scrollManager || (wrapper.scrollManager = new ScrollManager(wrapper, 'permission-table'));
+        const fragment = document.createDocumentFragment();
+        try {
+          let url = 'http://localhost:8080/show/info';
+          if (searchId) {
+            url += `?id=${searchId}`;
+          }
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const displayUsers = await response.json();
+
+          displayUsers.forEach(user => {
+            const tr = document.createElement('tr');
+            const permList = [];
+            if (user.permissions.edit) permList.push('修改数据');
+            if (user.permissions.delete) permList.push('删除数据');
+            if (user.permissions.add) permList.push('添加数据');
+            const permDisplay = permList.length > 0? permList.map(p => `<span class="permission-tag">${p}</span>`).join('') : '无权限';
+            tr.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>${user.username}</td>
+                            <td><div class="permission-list">${permDisplay}</div></td>`;
+            fragment.appendChild(tr);
+          });
+
+          tbody.innerHTML = '';
+          tbody.appendChild(fragment);
+
+          if (scrollManager.shouldAutoScroll(searchId)) {
+            wrapper.style.overflowY = 'auto';
+            // 这里不再调用 scrollManager.start()
+          } else {
+            wrapper.style.overflowY = 'auto';
+            scrollManager.stop();
+          }
+        } catch (error) {
+          console.error('Error fetching permission data:', error);
+        }
+      }
+    }
+
+    // 函数：清空更新用户信息表单
+    function clearUpdateUserForm() {
+      document.getElementById('uid').value = '';       // 清空用户ID输入框
+      document.getElementById('uemail').value = '';    // 清空新邮箱输入框
+      document.getElementById('upass').value = '';     // 清空新密码输入框
+      document.getElementById('uroot').value = '0';    // 将角色选择框重置为默认值（普通用户）
+    }
+
+    /* 函数：切换用户状态（激活/停用） */
+    async function toggleUserStatus(uid, currentStatus) {
+      const newStatus = !currentStatus;
+      try {
+        const response = await fetch(`http://localhost:8080/updateStatus?uid=${uid}&status=${newStatus ? 1 : 0}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // 更新表格
+        await updateUserTable();
+      } catch (error) {
+        console.error('Error updating user status:', error);
+      }
+    }
+
+    /* 函数：删除用户 */
+    async function deleteUser(uid) {
+      if (confirm('确定要删除该用户吗？')) {
+        try {
+          const response = await fetch(`http://localhost:8080/delete?uid=${uid}`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          // 获取当前输入的用户 ID
+          const permUserIdInput = document.getElementById('perm-user-id');
+          const searchId = permUserIdInput? parseInt(permUserIdInput.value) : null;
+
+          // 更新用户表和权限表
+          await updateUserTable(searchId);
+          await updatePermissionTable(searchId);
+
+          // 显示成功提示
+          await showAlert('成功', '用户删除成功！');
+        } catch (error) {
+          console.error('Error deleting user:', error);
+          await showAlert('错误', '删除用户失败，请稍后重试！');
+        }
+      }
+    }
+
+
+
+
+    /* 函数：清空权限表单 */
+    function clearPermissionForm() {
+      document.getElementById('perm-user-id').value = ''; // 清空用户 ID
+      document.getElementById('perm-edit').value = 'false'; // 重置修改权限
+      document.getElementById('perm-delete').value = 'false'; // 重置删除权限
+      document.getElementById('perm-add').value = 'false'; // 重置添加权限
+    }
+
+    /* 函数：根据用户 ID 搜索并更新表格 */
+    function searchUserById() {
+      const userIdInput = document.getElementById('perm-user-id').value; // 获取用户 ID 输入
+      const userId = userIdInput ? parseInt(userIdInput) : null; // 转换为数字或 null
+
+      if (userId) { // 如果输入了有效 ID
+        setPermissionForm(userId); // 设置权限表单
+        updateUserTable(userId); // 过滤用户表
+        updatePermissionTable(userId); // 过滤权限表
+      } else { // 如果没有输入
+        clearPermissionForm(); // 清空表单
+        updateUserTable(); // 显示所有用户
+        updatePermissionTable(); // 显示所有权限
+      }
+    }
+
+    /* 更新用户信息功能 */
+    function updateUserInfo() {
+      const userId = parseInt(document.getElementById('uid').value);
+      const newEmail = document.getElementById('uemail').value;
+      const newPassword = document.getElementById('upass').value;
+      const newRole = document.getElementById('uroot').value;
+      console.log(document.getElementById('uid').value);
+      console.log(document.getElementById('uemail').value);
+      console.log(document.getElementById('upass').value);
+      console.log(document.getElementById('uroot').value);
+
+      // 使用 jQuery AJAX 发送请求到后端接口
+      $.ajax({
+        url: 'http://localhost:8080/show/info', // 请求的 URL
+        type: 'POST', // 请求方法
+        data: {
+          uid: userId,
+          email: newEmail,
+          upass: newPassword,
+          uroot: newRole
+        }, // 发送到服务器的数据
+        dataType: 'json', // 预期从服务器接收到的返回数据类型
+        success: function (data) {
+          if (data == 1) { // 假设后端返回的数据中包含 success 属性，表示操作是否成功
+            alert('用户信息更新成功！' + data);
+            // 调用更新用户表的函数
+            updateUserTable();
+            // 清空更新用户信息的文本框
+            document.getElementById('uid').value = '';
+            document.getElementById('uemail').value = '';
+            document.getElementById('upass').value = '';
+            document.getElementById('uroot').value = '';
+          } else {
+            alert('失败，请重试！！' + data)
+          }
+        },
+      });
+    }
+
+    // 函数：刷新用户列表
+    /*  async function refreshUserList() {
+        try {
+          users = await fetchUsers(); // 重新从后端获取用户数据
+          renderUserList(); // 重新渲染用户列表
+          clearUpdateUserForm(); //清空表单
+        } catch (error) {
+          console.error('刷新用户列表失败:', error);
+          await showAlert('错误', '刷新用户列表失败，请稍后重试');
+        }
+      }*/
+
+    /*function renderUserList() {
+      const userList = document.getElementById('user-table');
+      if (userList) {
+        userList.innerHTML = '';
+        users.forEach(user => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+          <td>${user.uname}</td>
+          <td>${user.upass}</td>
+          <td>${user.email}</td>
+          <td>${user.uroot === '1' ? '管理员' : '普通用户'}</td>
+          <td>${user.status === 'active' ? '激活' : '停用'}</td>
+          <td>
+            <button class="btn" onclick="toggleUserStatus(${user.uid})" style="margin-right: 8px;">
+              ${user.status === 'active' ? '停用' : '激活'}
+            </button>
+            <button class="btn" onclick="deleteUser(${user.uid})">删除</button>
+          </td>
+        `;
+
+          // 为每一行添加点击事件监听器
+          tr.addEventListener('click', () => {
+            // 将当前行的用户数据赋值给 selectedUser
+            selectedUser = user;
+
+            // 更新表单数据
+            document.getElementById('uid').value = user.uid;
+            document.getElementById('uemail').value = user.email;
+            document.getElementById('upass').value = user.upass;
+            document.getElementById('uroot').value = user.uroot;
+          });
+
+          userList.appendChild(tr);
+        });
+      } else {
+        console.error('User table not found');
+      }
+    }
+  */
+
+    /* 事件监听器：页面加载完成后初始化 */
+    let users = []; // 定义在外部作用域
+
+    const socket = new WebSocket('ws://localhost:8080/ws');
+
+    socket.onopen = function() {
+      console.log('WebSocket 连接已建立');
+      socket.send('你好，服务器');
+    };
+
+    socket.onmessage = function(event) {
+      const data = event.data;
+      console.log('收到服务器消息: ', data);
+    };
+
+    socket.onclose = function() {
+      console.log('WebSocket 连接已关闭');
+    };
+
+    socket.onerror = function(error) {
+      console.error('WebSocket 连接错误: ', error);
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const userWrapper = document.querySelector('.user-table-wrapper');
+      const permWrapper = document.querySelector('.permission-table-wrapper');
+
+      updateUserTable();
+      updatePermissionTable();
+      new SidebarUI();
+
+      const debounce = (func, wait) => {
+        let timeout;
+        return (...args) => {
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+      };
+
+      if (userWrapper) {
+        userWrapper.addEventListener('mouseenter', () => {
+          if (userWrapper.scrollManager) userWrapper.scrollManager.pause();
+        });
+
+        userWrapper.addEventListener('mouseleave', debounce(() => {
+          const permUserIdInput = document.getElementById('perm-user-id');
+          const searchId = permUserIdInput? parseInt(permUserIdInput.value) : null;
+          if (userWrapper.scrollManager && userWrapper.scrollManager.shouldAutoScroll(searchId)) {
+            userWrapper.scrollManager.resume();
+          }
+        }, 200));
+      }
+
+      if (permWrapper) {
+        permWrapper.addEventListener('mouseenter', () => {
+          if (permWrapper.scrollManager) permWrapper.scrollManager.pause();
+        });
+
+        permWrapper.addEventListener('mouseleave', debounce(() => {
+          const permUserIdInput = document.getElementById('perm-user-id');
+          const searchId = permUserIdInput? parseInt(permUserIdInput.value) : null;
+          if (permWrapper.scrollManager && permWrapper.scrollManager.shouldAutoScroll(searchId)) {
+            permWrapper.scrollManager.resume();
+          }
+        }, 200));
+      }
+    });
+    function getParameterByName(name, url = window.location.href) {
+      name = name.replace(/[\[\]]/g, '\\$&');
+      var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+              results = regex.exec(url);
+      if (!results) return null;
+      if (!results[2]) return '';
+      return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    }
+    var uroot = getParameterByName('uroot');
+
+    // 非法登录校验
+    // if (uroot == null) {
+    //   alert("非法登录");
+    //   window.location.href = "login.html"
+    // }
+  </script>
+</body>
+</html>

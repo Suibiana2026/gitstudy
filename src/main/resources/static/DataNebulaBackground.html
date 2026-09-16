@@ -1,0 +1,2993 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数据星云后台</title>
+  <!-- 引入 ECharts 库 -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <style>
+    /* 根变量定义模块 - 定义全局颜色、过渡效果等 */
+    :root {
+      --primary-color: #1890ff;
+      --sidebar-bg: linear-gradient(145deg, #0a1724 0%, #1a3566 100%);
+      --active-bg: rgba(24, 144, 255, 0.25);
+      --submenu-bg: rgba(255, 255, 255, 0.1);
+      --text-primary: rgba(255, 255, 255, 0.95);
+      --text-secondary: rgba(255, 255, 255, 0.65);
+      --surface-1: rgba(255, 255, 255, 0.12);
+      --divider: rgba(255, 255, 255, 0.15);
+      --success: #52c41a;
+      --error: #ff4d4f;
+      --radius-base: 8px;
+      --transition-base: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    /* 重置和全局样式模块 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'HarmonyOS Sans', 'Segoe UI', system-ui, sans-serif;
+    }
+
+    body {
+      display: flex;
+      min-height: 100vh;
+      background: #0d1b2a;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* 按钮样式模块 */
+    .btn {
+      padding: 10px 14px;
+      background: linear-gradient(135deg, rgba(24, 144, 255, 0.9), rgba(64, 196, 255, 0.9));
+      border-radius: var(--radius-base);
+      border: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: var(--transition-base);
+      white-space: nowrap;
+      position: relative;
+      overflow: hidden;
+      z-index: 20;
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: rgba(255, 255, 255, 0.1);
+      transform: rotate(30deg);
+      transition: all 0.5s ease;
+      pointer-events: none;
+    }
+
+    .btn:hover::after { top: 100%; left: 100%; }
+    .btn:hover {
+      background: linear-gradient(135deg, #007bff, #4dd0e1);
+      box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+      transform: translateY(-2px) scale(1.02);
+    }
+    .btn:active {
+      transform: scale(0.98);
+      box-shadow: 0 1px 3px rgba(24, 144, 255, 0.15);
+    }
+    /* 侧边栏模块 */
+    .sidebar {
+      width: 72px;
+      background: var(--sidebar-bg);
+      padding: 16px 8px;
+      color: var(--text-primary);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* 优化过渡曲线 */
+      box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
+      border-radius: 0 var(--radius-base) var(--radius-base) 0;
+      backdrop-filter: blur(10px);
+      z-index: 300;
+    }
+
+    .sidebar.expanded {
+      width: 280px; /* 使用类控制展开状态，避免hover冲突 */
+      box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+    }
+
+
+
+    /* 导航项模块 */
+    .nav-item {
+      margin: 8px 0;
+      border-radius: var(--radius-base);
+      transition: background 0.2s ease, transform 0.2s ease; /* 添加transform过渡 */
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-item.active {
+      background: var(--active-bg);
+      border-left: 3px solid var(--primary-color);
+      transform: translateX(2px); /* 激活时轻微右移 */
+    }
+
+    .nav-item:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateX(2px); /* hover时轻微右移 */
+    }
+
+    /* 菜单头部模块 */
+    .menu-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 12px;
+      transition: var(--transition-base);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .sidebar:not(.expanded) .menu-header {
+      justify-content: center;
+      padding: 12px 0;
+    }
+
+    .menu-header::before {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      background: var(--text-primary);
+      mask-size: contain;
+      mask-repeat: no-repeat;
+      margin-right: 12px; /* 默认有间距 */
+      transition: transform 0.2s ease, margin-right 0.2s ease;
+    }
+
+    .sidebar:not(.expanded) .menu-header::before {
+      margin-right: 0; /* 未展开时无间距 */
+    }
+
+    .menu-header:hover::before {
+      transform: scale(1.15); /* 优化：更大缩放比例 */
+    }
+
+    /* 菜单文本和提示模块 */
+    .menu-header span {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      opacity: 1;
+      transition: opacity 0.2s ease;
+    }
+
+    .sidebar:not(.expanded) .menu-header span {
+      opacity: 0;
+      position: absolute; /* 避免占用空间 */
+      pointer-events: none; /* 防止干扰 */
+    }
+
+    .sidebar.expanded .menu-header span {
+      opacity: 1;
+      position: static;
+    }
+
+    /* 提示气泡优化 */
+    .menu-header::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 80px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: var(--text-primary);
+      padding: 8px 14px; /* 更大内边距 */
+      border-radius: 6px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 400;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); /* 增强阴影 */
+    }
+
+    .sidebar:not(.expanded) .menu-header:hover::after {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(-50%) translateX(8px); /* 更自然的偏移 */
+    }
+
+    /* 子菜单模块 */
+    .submenu {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); /* 更平滑的展开动画 */
+      background: rgba(0, 0, 0, 0.15);
+      margin: 4px 8px;
+      border-radius: var(--radius-base);
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-item.expanded .submenu {
+      max-height: 600px; /* 确保足够高度 */
+    }
+
+    /* 子菜单项优化 */
+    .submenu-item {
+      padding: 10px 16px 10px 40px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      transition: var(--transition-base), padding-left 0.2s ease;
+      cursor: pointer;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .submenu-item:hover,
+    .submenu-item.active {
+      background: var(--submenu-bg);
+      color: var(--text-primary);
+      padding-left: 44px;
+      transform: translateX(2px); /* 轻微右移 */
+    }
+
+    .submenu-item::before {
+      content: '';
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      width: 6px;
+      height: 6px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      transform: translateY(-50%);
+      transition: var(--transition-base);
+    }
+
+    .submenu-item:hover::before,
+    .submenu-item.active::before {
+      background: var(--primary-color);
+      transform: translateY(-50%) scale(1.3); /* 更大缩放 */
+    }
+
+    .sidebar:hover .menu-header::before { margin-right: 12px; }
+    .menu-header:hover::before { transform: scale(1.1); }
+
+    /* 导航图标模块 - 为每个导航项定义独特的图标 */
+    #home-nav .menu-header::before { mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>'); }
+    .nav-item:nth-child(2) .menu-header::before { mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>'); }
+    .nav-item:nth-child(3) .menu-header::before { mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 14H5V7h14v10z"/></svg>'); }
+    .nav-item:nth-child(4) .menu-header::before { mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>'); }
+    .nav-item:nth-child(5) .menu-header::before { mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>'); }
+    #back-home-nav .menu-header::before {
+      mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm5 13h-2v-2h2zm0-4h-2V9h2zm-4 4h-2v-2h2zm0-4h-2V9h2zm-4 4H7v-2h2zm0-4H7V9h2z"/></svg>');
+    }
+    /* 菜单文本和提示模块 */
+    .menu-header span {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      transition: opacity 0.2s ease;
+    }
+
+    .sidebar:not(:hover) .menu-header span { display: none; opacity: 0; }
+    .sidebar:hover .menu-header span { display: inline; opacity: 1; }
+
+    .menu-header::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      left: 80px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 400;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .sidebar:not(:hover) .menu-header:hover::after {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(-50%) translateX(5px);
+    }
+
+    /* 主页导航特殊样式模块 */
+    #home-nav .menu-header {
+      background: linear-gradient(135deg, var(--primary-color), #40c4ff);
+      box-shadow: 0 2px 6px rgba(24, 144, 255, 0.25);
+      border-radius: var(--radius-base);
+    }
+
+    #home-nav::after {
+      content: '';
+      display: block;
+      width: 90%;
+      height: 1px;
+      background: var(--divider);
+      margin: 12px auto;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .sidebar:hover #home-nav::after { opacity: 1; }
+
+    /* 子菜单模块 */
+    .submenu {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+      background: rgba(0, 0, 0, 0.15);
+      margin: 4px 8px;
+      border-radius: var(--radius-base);
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-item.expanded .submenu { max-height: 600px; }
+
+    .submenu-item {
+      padding: 10px 16px 10px 40px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      transition: var(--transition-base);
+      cursor: pointer;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .submenu-item::before {
+      content: '';
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      width: 6px; height: 6px;
+      background: var(--text-secondary);
+      border-radius: 50%;
+      transform: translateY(-50%);
+      transition: var(--transition-base);
+    }
+
+    .submenu-item:hover,
+    .submenu-item.active {
+      background: var(--submenu-bg);
+      color: var(--text-primary);
+      padding-left: 44px;
+    }
+
+    .submenu-item:hover::before,
+    .submenu-item.active::before {
+      background: var(--primary-color);
+      transform: translateY(-50%) scale(1.2);
+    }
+
+    /* 主内容区域模块 */
+    .main-content {
+      flex: 1;
+      padding: 40px;
+      min-height: 100vh;
+      background: var(--sidebar-bg);
+      border-radius: var(--radius-base);
+      box-shadow: 0 4px 24px -12px rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(8px);
+      position: relative;
+      z-index: 200;
+    }
+
+                                          /* 面包屑导航模块 */
+    .breadcrumb {
+      margin-bottom: 24px; /* 增加底部间距，增强层次感 */
+      color: var(--text-primary);
+      font-size: 15px; /* 字体略微放大，提升可读性 */
+      font-weight: 500; /* 添加字重，使文字更清晰 */
+      display: flex;
+      align-items: center;
+      gap: 12px; /* 增加间距，视觉更宽松 */
+      background: rgba(255, 255, 255, 0.05); /* 添加微弱背景，增加立体感 */
+      padding: 8px 16px; /* 添加内边距，提升包裹感 */
+      border-radius: var(--radius-base); /* 圆角设计，柔化边缘 */
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* 轻微阴影，增加浮动感 */
+      backdrop-filter: blur(4px); /* 轻微模糊效果，增强质感 */
+    }
+
+    /* 激活状态的面包屑项 */
+    .breadcrumb-item.active {
+      color: var(--primary-color);
+      font-weight: 600; /* 增强字重，突出激活项 */
+      opacity: 1;
+      position: relative; /* 为伪元素定位 */
+    }
+
+    /* 激活项的下划线效果 */
+    .breadcrumb-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: var(--primary-color);
+      border-radius: 1px;
+      opacity: 0.8;
+    }
+
+    /* 分隔符样式 */
+    .breadcrumb-separator {
+      opacity: 0.6; /* 略提高透明度，柔和视觉 */
+      font-size: 12px; /* 缩小分隔符，减少干扰 */
+      color: var(--text-secondary); /* 使用次要文字颜色，增强对比 */
+      transition: opacity 0.2s ease; /* 添加过渡效果 */
+    }
+
+    /* 悬停效果 */
+    .breadcrumb-item:hover:not(.active) {
+      opacity: 1;
+      color: rgba(255, 255, 255, 0.95); /* 悬停时提亮 */
+      cursor: pointer; /* 可点击感 */
+    }
+
+    .breadcrumb-item:hover + .breadcrumb-separator {
+      opacity: 0.8; /* 悬停时分隔符也提亮 */
+    }
+    /* 仪表盘卡片模块 */
+    .dashboard-card {
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+      border-radius: var(--radius-base);
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      transition: var(--transition-base);
+      opacity: 0;
+      transform: translateY(20px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dashboard-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .dashboard-card:hover {
+      transform: translateY(-6px) scale(1.03);
+      box-shadow: 0 12px 32px rgba(24, 144, 255, 0.25);
+      border-color: var(--primary-color);
+    }
+
+    .card-title {
+      font-size: 18px;
+      color: var(--text-primary);
+      font-weight: 600;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--divider);
+      padding-bottom: 8px;
+    }
+
+    /* 数据表格模块 */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .data-table th {
+      background: linear-gradient(90deg, var(--active-bg), rgba(24, 144, 255, 0.15));
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 13px;
+      color: var(--primary-color);
+    }
+
+    .data-table tr:nth-child(even) { background: rgba(255, 255, 255, 0.03); }
+    .data-table tr:hover { background: rgba(24, 144, 255, 0.1); transition: background 0.2s ease; }
+
+    /* 概览网格模块 */
+    .overview-grid {
+      display: grid;
+      gap: 24px;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+
+    .overview-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .metric-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+      opacity: 0.85;
+    }
+
+    .metric-value {
+      font-size: 34px;
+      font-weight: 700;
+      color: var(--primary-color);
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    .metric-trend {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      background: rgba(82, 196, 26, 0.15);
+      color: var(--success);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .metric-trend.down {
+      background: rgba(255, 77, 79, 0.15);
+      color: var(--error);
+    }
+
+    /* 动画模块 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+                                            /* 时间段切换模块 */
+    /* 时间段切换容器 */
+    .time-period-tabs {
+      display: flex;
+      gap: 16px; /* 增加间距以提升视觉舒适度 */
+      margin-bottom: 28px; /* 略微增加底部间距，增强层次感 */
+      justify-content: center;
+      padding: 8px; /* 添加内边距，使整体更有呼吸感 */
+      background: rgba(255, 255, 255, 0.05); /* 添加微弱背景，提升容器感 */
+      border-radius: var(--radius-base);
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.1); /* 轻微内阴影增加深度 */
+    }
+
+    /* 时间段标签基础样式 */
+    .time-tab {
+      padding: 10px 24px; /* 增加内边距，使点击区域更大、更舒适 */
+      font-size: 15px; /* 字体略微放大，提升可读性 */
+      font-weight: 500; /* 添加字重，使文字更突出 */
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05)); /* 渐变背景增加质感 */
+      border-radius: calc(var(--radius-base) - 2px); /* 略小圆角，与容器区分 */
+      border: 1px solid rgba(255, 255, 255, 0.15); /* 添加微弱边框，提升立体感 */
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); /* 优化过渡曲线，感觉更自然 */
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08); /* 增强阴影，增加浮动感 */
+      position: relative; /* 为伪元素准备定位 */
+      overflow: hidden; /* 防止伪元素溢出 */
+    }
+
+    /* 悬停时的光效伪元素 */
+    .time-tab::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: rgba(255, 255, 255, 0.1);
+      transform: rotate(30deg);
+      transition: all 0.4s ease;
+      pointer-events: none;
+    }
+
+    /* 激活状态 */
+    .time-tab.active {
+      background: linear-gradient(135deg, var(--primary-color), #40c4ff); /* 渐变主色调，更丰富 */
+      box-shadow: 0 4px 12px rgba(24, 144, 255, 0.35); /* 增强阴影，突出激活状态 */
+      transform: scale(1.06); /* 略微放大，增加活跃感 */
+      color: #ffffff; /* 确保文字在深色背景上的可读性 */
+      border-color: transparent; /* 移除边框，与背景融合 */
+    }
+
+    /* 非激活状态的悬停效果 */
+    .time-tab:hover:not(.active) {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.1)); /* 增强悬停时的渐变 */
+      transform: translateY(-2px); /* 提升更多，增加动感 */
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12); /* 悬停时阴影更明显 */
+    }
+
+    .time-tab:hover:not(.active)::after {
+      top: 100%;
+      left: 100%; /* 光效从左上滑到右下 */
+    }
+
+                                       /* 图表容器模块 */
+    #sales-by-time-chart, #sales-by-age-chart, #sales-by-region-chart, #sales-by-model-chart,
+    #inventory-status-chart, #model-pressure-chart, #region-pressure-chart,
+    #prod-sales-region-chart, #prod-sales-color-chart {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius-base);
+      padding: 20px;
+      box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.1);
+      height: 500px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+<!-- 侧边栏导航 -->
+<nav class="sidebar">
+  <div class="nav-menu">
+    <div class="nav-item" id="home-nav">
+      <div class="menu-header btn" data-tooltip="返回默认界面"><span>返回默认界面</span></div>
+    </div>
+    <div class="nav-item active">
+      <div class="menu-header" data-tooltip="各销售数据展示"><span>各销售数据展示</span></div>
+      <div class="submenu">
+        <div class="submenu-item" data-content="sales-by-time">各时段销售情况</div>
+        <div class="submenu-item" data-content="sales-by-age">各年龄段销售情况</div>
+        <div class="submenu-item" data-content="sales-by-region">各地区销售情况</div>
+        <div class="submenu-item" data-content="sales-by-color">各型号销售情况</div>
+      </div>
+    </div>
+    <div class="nav-item">
+      <div class="menu-header" data-tooltip="仓库管理"><span>仓库管理</span></div>
+      <div class="submenu">
+        <div class="submenu-item" data-content="inventory-status">库存状态</div>
+        <div class="submenu-item" data-content="inventory-log">出入记录</div>
+        <div class="submenu-item" data-content="model-pressure">各型号压仓情况</div>
+        <div class="submenu-item" data-content="region-pressure">各地区压仓情况</div>
+      </div>
+    </div>
+    <div class="nav-item">
+      <div class="menu-header" data-tooltip="生产线管理"><span>生产线管理</span></div>
+      <div class="submenu">
+        <div class="submenu-item" data-content="prod-sales-region">各地区销售与计划</div>
+        <div class="submenu-item" data-content="prod-sales-color">各型号流转情况</div>
+      </div>
+    </div>
+    <div class="nav-item" id="back-home-nav">
+      <div class="menu-header btn" data-tooltip="返回首页"><span>返回首页</span></div>
+    </div>
+  </div>
+
+  </div>
+</nav>
+
+<!-- 主内容区域 -->
+<div class="main-content">
+  <div class="dashboard-grid" id="content-area">
+    <div class="dashboard-card overview-card visible">
+      <div class="card-title">数据概览</div>
+      <div class="overview-grid">
+        <div class="overview-item">
+          <div class="metric-label">总销售额</div>
+          <div class="metric-value">¥1,234,567</div>
+          <div class="metric-trend">增长 12%</div>
+        </div>
+        <div class="overview-item">
+          <div class="metric-label">订单量</div>
+          <div class="metric-value">5,678</div>
+          <div class="metric-trend down">下降 3%</div>
+        </div>
+        <div class="overview-item">
+          <div class="metric-label">活跃用户</div>
+          <div class="metric-value">12,345</div>
+          <div class="metric-trend">增长 8%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+                                          <!--JS函数部分-->
+<script>
+  class DashboardUI {
+    constructor() {
+      this.sidebar = document.querySelector('.sidebar');
+      this.navItems = document.querySelectorAll('.nav-item');
+      this.submenuItems = document.querySelectorAll('.submenu-item');
+      this.contentArea = document.getElementById('content-area');
+      this.breadcrumb = document.querySelector('.breadcrumb');
+      this.homeNav = document.getElementById('home-nav');
+      this.backHomeNav = document.getElementById('back-home-nav'); // Ensure back-home-nav is referenced
+      this.isSidebarPinned = false; // Track whether sidebar is pinned
+
+      // Initialize default content and event listeners
+      this.showDefaultContent();
+      this.initEventListeners();
+    }
+
+    // Consolidated initEventListeners method
+    initEventListeners() {
+      // Home navigation click
+      this.homeNav.querySelector('.menu-header').addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.showDefaultContent();
+        this.updateBreadcrumb('数据概览');
+        this.closeAllSubmenus();
+      });
+
+      // Back to home navigation click
+      this.backHomeNav.querySelector('.menu-header').addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        window.location.href = 'FunctionTest.html'; //返回到指定的页面 孟琦宝宝看这里
+      });
+
+      // Sidebar navigation items
+      this.navItems.forEach(item => {
+        const header = item.querySelector('.menu-header');
+        if (item !== this.homeNav && item !== this.backHomeNav) { // Exclude home and back-home nav
+          header.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const wasExpanded = item.classList.contains('expanded');
+            this.toggleSubmenu(item);
+            this.toggleNavItem(item);
+            // Pin sidebar on click if expanding
+            if (!wasExpanded) {
+              this.isSidebarPinned = true;
+              this.sidebar.classList.add('expanded');
+            }
+          });
+        }
+      });
+
+      // Submenu items click
+      this.submenuItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showContent(item.dataset.content);
+          this.submenuItems.forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+        });
+      });
+
+      // Sidebar mouse events
+      this.sidebar.addEventListener('mouseenter', () => {
+        if (!this.isSidebarPinned) {
+          this.sidebar.classList.add('expanded');
+        }
+      });
+
+      this.sidebar.addEventListener('mouseleave', () => {
+        if (!this.isSidebarPinned) {
+          this.sidebar.classList.remove('expanded');
+          this.closeAllSubmenus();
+        }
+      });
+
+      // Unpin sidebar when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!this.sidebar.contains(e.target) && this.isSidebarPinned) {
+          this.isSidebarPinned = false;
+          this.sidebar.classList.remove('expanded');
+          this.closeAllSubmenus();
+        }
+      });
+    }
+    // 功能： 显示默认的数据概览内容。
+    // 替换原有的 showDefaultContent 方法
+    showDefaultContent() {
+      this.contentArea.innerHTML = `
+    <div class="dashboard-card overview-card visible">
+      <div class="card-title">数据概览</div>
+      <!-- 关键指标区 -->
+      <div class="overview-grid" style="margin-bottom: 32px;">
+        <div class="overview-item">
+          <div class="metric-label">总销售额</div>
+          <div class="metric-value" style="color: #40c4ff;">¥12.5M</div>
+          <div class="metric-trend" style="background: rgba(64, 196, 255, 0.15);">
+            <span style="font-size: 10px;">↑</span> 15.3%
+          </div>
+        </div>
+        <div class="overview-item">
+          <div class="metric-label">总订单量</div>
+          <div class="metric-value" style="color: #52c41a;">8,927</div>
+          <div class="metric-trend" style="background: rgba(82, 196, 26, 0.15);">
+            <span style="font-size: 10px;">↑</span> 7.8%
+          </div>
+        </div>
+        <div class="overview-item">
+          <div class="metric-label">库存周转率</div>
+          <div class="metric-value" style="color: #faad14;">2.4</div>
+          <div class="metric-trend down" style="background: rgba(250, 173, 20, 0.15);">
+            <span style="font-size: 10px;">↓</span> 4.2%
+          </div>
+        </div>
+        <div class="overview-item">
+          <div class="metric-label">活跃生产线</div>
+          <div class="metric-value" style="color: #f5222d;">15</div>
+          <div class="metric-trend" style="background: rgba(245, 34, 45, 0.15);">
+            <span style="font-size: 10px;">→</span> 平稳
+          </div>
+        </div>
+      </div>
+
+      <!-- 时间趋势图 -->
+      <div class="time-period-tabs" style="margin-bottom: 20px;">
+        <button class="btn time-tab active" data-period="weekly">周度</button>
+        <button class="btn time-tab" data-period="monthly">月度</button>
+        <button class="btn time-tab" data-period="quarterly">季度</button>
+      </div>
+      <div id="overview-trend-chart" style="width: 100%; height: 300px; margin-bottom: 32px;"></div>
+
+      <!-- 销售分布图 -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+        <div id="overview-region-dist" style="width: 100%; height: 300px;"></div>
+        <div id="overview-model-dist" style="width: 100%; height: 300px;"></div>
+      </div>
+    </div>
+  `;
+
+      // 初始化图表
+      setTimeout(() => {
+        this.initOverviewTrendChart('weekly');
+        this.initRegionDistributionChart();
+        this.initModelDistributionChart();
+        this.initOverviewTabListeners();
+      }, 100);
+    }
+
+// 新增方法：初始化概览趋势图
+    initOverviewTrendChart(period) {
+      const chartDom = document.getElementById('overview-trend-chart');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom);
+      const periodData = {
+        weekly: {
+          xAxis: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+          sales: [1200, 1500, 1800, 1700, 2000, 1300, 1400],
+          orders: [80, 95, 110, 105, 120, 85, 90]
+        },
+        monthly: {
+          xAxis: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+          sales: [5000, 4500, 6000, 5800, 6200, 5900, 6500, 7000, 6800, 7200, 7500, 8000],
+          orders: [300, 280, 350, 340, 360, 345, 370, 400, 390, 410, 420, 450]
+        },
+        quarterly: {
+          xAxis: ['Q1', 'Q2', 'Q3', 'Q4'],
+          sales: [18000, 19000, 20000, 21000],
+          orders: [1000, 1050, 1100, 1150]
+        }
+      };
+
+      const data = periodData[period] || periodData.monthly;
+
+      const option = {
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          formatter: params => {
+            let result = `<strong>${params[0].name}</strong><br/>`;
+            params.forEach(p => {
+              result += `${p.marker} ${p.seriesName}: ${p.value.toLocaleString()} ${p.seriesName === '销售额' ? '¥' : '单'}<br/>`;
+            });
+            return result;
+          }
+        },
+        legend: {
+          top: '0',
+          textStyle: { color: 'rgba(255, 255, 255, 0.85)', fontSize: 12 }
+        },
+        grid: { left: '5%', right: '5%', bottom: '10%', top: '20%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: data.xAxis,
+          axisLabel: { color: 'rgba(255, 255, 255, 0.75)', fontSize: 12 }
+        },
+        yAxis: [
+          {
+            type: 'value',
+            name: '销售额 (¥)',
+            axisLabel: { color: 'rgba(255, 255, 255, 0.75)', formatter: '{value}' },
+            splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } }
+          },
+          {
+            type: 'value',
+            name: '订单量 (单)',
+            axisLabel: { color: 'rgba(255, 255, 255, 0.75)', formatter: '{value}' },
+            splitLine: { show: false }
+          }
+        ],
+        series: [
+          {
+            name: '销售额',
+            type: 'line',
+            smooth: true,
+            data: data.sales,
+            yAxisIndex: 0,
+            itemStyle: { color: '#40c4ff' },
+            areaStyle: { opacity: 0.2, color: '#40c4ff' }
+          },
+          {
+            name: '订单量',
+            type: 'line',
+            smooth: true,
+            data: data.orders,
+            yAxisIndex: 1,
+            itemStyle: { color: '#52c41a' },
+            areaStyle: { opacity: 0.2, color: '#52c41a' }
+          }
+        ]
+      };
+
+      myChart.setOption(option);
+      window.addEventListener('resize', () => myChart.resize());
+    }
+
+// 新增方法：初始化地区分布图
+    initRegionDistributionChart() {
+      const chartDom = document.getElementById('overview-region-dist');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom);
+      const data = [
+        { name: '华东', value: 3500 },
+        { name: '华南', value: 2800 },
+        { name: '华北', value: 2200 },
+        { name: '华中', value: 1800 },
+        { name: '西南', value: 1500 },
+        { name: '西北', value: 1200 },
+        { name: '东北', value: 1000 }
+      ];
+
+      const option = {
+        backgroundColor: 'transparent',
+        title: { text: '地区销售分布', left: 'center', top: 0, textStyle: { color: 'rgba(255, 255, 255, 0.9)', fontSize: 14 } },
+        tooltip: { trigger: 'item', formatter: '{b}: {c}¥ ({d}%)' },
+        series: [{
+          type: 'pie',
+          radius: ['40%', '70%'],
+          center: ['50%', '60%'],
+          data: data,
+          label: { color: 'rgba(255, 255, 255, 0.9)', fontSize: 12 },
+          itemStyle: {
+            color: params => {
+              const colors = ['#1890ff', '#40c4ff', '#52c41a', '#faad14', '#f5222d', '#eb2f96', '#13c2c2'];
+              return colors[params.dataIndex % colors.length];
+            }
+          }
+        }]
+      };
+
+      myChart.setOption(option);
+      window.addEventListener('resize', () => myChart.resize());
+    }
+
+// 新增方法：初始化型号分布图
+    initModelDistributionChart() {
+      const chartDom = document.getElementById('overview-model-dist');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom);
+      const data = [
+        { name: '奥迪 A6', value: 1800 },
+        { name: '奔驰 C级', value: 1500 },
+        { name: '宝马 3系', value: 1300 },
+        { name: '法拉利 488', value: 900 },
+        { name: '柯尼塞格 Jesko', value: 600 }
+      ];
+
+      const option = {
+        backgroundColor: 'transparent',
+        title: { text: '型号销售分布', left: 'center', top: 0, textStyle: { color: 'rgba(255, 255, 255, 0.9)', fontSize: 14 } },
+        tooltip: { trigger: 'item', formatter: '{b}: {c}¥ ({d}%)' },
+        series: [{
+          type: 'pie',
+          radius: ['40%', '70%'],
+          center: ['50%', '60%'],
+          data: data,
+          label: { color: 'rgba(255, 255, 255, 0.9)', fontSize: 12 },
+          itemStyle: {
+            color: params => {
+              const colors = ['#1890ff', '#40c4ff', '#52c41a', '#faad14', '#f5222d'];
+              return colors[params.dataIndex % colors.length];
+            }
+          }
+        }]
+      };
+
+      myChart.setOption(option);
+      window.addEventListener('resize', () => myChart.resize());
+    }
+
+// 新增方法：初始化概览时间周期切换
+    initOverviewTabListeners() {
+      const tabs = document.querySelectorAll('#content-area .time-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const period = tab.dataset.period;
+          this.initOverviewTrendChart(period);
+        });
+      });
+    }
+
+    // 功能： 根据内容类型动态显示对应的仪表盘内容。
+    showContent(contentType) {
+      this.contentArea.innerHTML = '';
+      const board = document.createElement('div');
+      board.classList.add('dashboard-card');
+
+      if (contentType === 'sales-by-time') {
+        board.innerHTML = `
+                        <div class="card-title">${this.getContentTitle(contentType)}</div>
+                        <div class="time-period-tabs">
+                            <button class="btn time-tab active" data-period="monthly">月度</button>
+                            <button class="btn time-tab" data-period="quarterly">季度</button>
+                            <button class="btn time-tab" data-period="yearly">年度</button>
+                        </div>
+                        <div id="sales-by-time-chart" style="width: 100%; height: 500px;"></div>
+                    `;
+        this.contentArea.appendChild(board);
+        requestAnimationFrame(() => {
+          board.classList.add('visible');
+          setTimeout(() => {
+            this.initTimeSalesChart('monthly');
+            this.initTabListeners();
+          }, 100);
+        });
+      } else if (contentType === 'sales-by-age') {
+        board.innerHTML = `
+                        <div class="card-title">${this.getContentTitle(contentType)}</div>
+                        <div id="sales-by-age-chart" style="width: 100%; height: 400px;"></div>
+                    `;
+        this.contentArea.appendChild(board);
+        requestAnimationFrame(() => {
+          board.classList.add('visible');
+          setTimeout(() => this.initAgeSalesChart(), 100);
+        });
+      } else if (contentType === 'sales-by-region') {
+        board.innerHTML = `
+                        <div class="card-title">${this.getContentTitle(contentType)}</div>
+                        <div class="time-period-tabs">
+                            <button class="btn" id="toggle-region-btn">切换到省份数据</button>
+                        </div>
+                        <div id="sales-by-region-chart" style="width: 100%; height: 500px;"></div>
+                    `;
+        this.contentArea.appendChild(board);
+        requestAnimationFrame(() => {
+          board.classList.add('visible');
+          setTimeout(() => this.initRegionSalesChart(), 100);
+        });
+      } else if (contentType === 'sales-by-color') {
+        board.innerHTML = `
+                        <div class="card-title">${this.getContentTitle(contentType)}</div>
+                        <div id="sales-by-model-chart" style="width: 100%; height: 500px;"></div>
+                    `;
+        this.contentArea.appendChild(board);
+        requestAnimationFrame(() => {
+          board.classList.add('visible');
+          setTimeout(() => this.initModelSalesChart(), 100);
+        });
+      } else if (contentType === 'inventory-status') {
+        board.innerHTML = `
+                        <div class="card-title">${this.getContentTitle(contentType)}</div>
+                        <div id="inventory-status-chart" style="width: 100%; height: 500px;"></div>
+                    `;
+        this.contentArea.appendChild(board);
+        requestAnimationFrame(() => {
+          board.classList.add('visible');
+          setTimeout(() => this.initInventoryStatusChart(), 100);
+        });
+      } else if (contentType === 'inventory-log') {
+        board.innerHTML = `
+                        <div class="card-title">${this.getContentTitle(contentType)}</div>
+                        <div class="time-period-tabs">
+                            <button class="btn time-tab active" data-period="monthly">月度</button>
+                            <button class="btn time-tab" data-period="weekly">周度</button>
+                            <button class="btn time-tab" data-period="daily">日度</button>
+                        </div>
+                        <div id="inventory-log-chart" style="width: 100%; height: 500px;"></div>
+                    `;
+        this.contentArea.appendChild(board);
+        requestAnimationFrame(() => {
+          board.classList.add('visible');
+          setTimeout(() => {
+            this.initInventoryLogChart('monthly');
+            this.initInventoryLogTabListeners();
+          }, 100);
+        });
+      } else if (contentType === 'model-pressure') {
+        board.innerHTML = `
+                        <div class="card-title">${this.getContentTitle(contentType)}</div>
+                        <div id="model-pressure-chart" style="width: 100%; height: 500px;"></div>
+                    `;
+        this.contentArea.appendChild(board);
+        requestAnimationFrame(() => {
+          board.classList.add('visible');
+          setTimeout(() => this.initModelPressureChart(), 100);
+        });
+      } else if (contentType === 'region-pressure') {
+        board.innerHTML = `
+                        <div class="card-title">${this.getContentTitle(contentType)}</div>
+                        <div class="time-period-tabs">
+                            <button class="btn" id="toggle-pressure-view">切换到省份视图</button>
+                        </div>
+                        <div id="region-pressure-chart" style="width: 100%; height: 500px;"></div>
+                    `;
+        this.contentArea.appendChild(board);
+        requestAnimationFrame(() => {
+          board.classList.add('visible');
+          setTimeout(() => this.initRegionPressureChart(), 100);
+        });
+      } else if (contentType === 'user-list') {
+        board.innerHTML = `
+                        <div class="card-title">用户列表</div>
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>ID</th><th>用户名</th><th>状态</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>1</td><td>张三</td><td class="metric-trend">活跃</td></tr>
+                                <tr><td>2</td><td>李四</td><td class="metric-trend down">停用</td></tr>
+                            </tbody>
+                        </table>`;
+        this.contentArea.appendChild(board);
+        requestAnimationFrame(() => board.classList.add('visible'));
+      } else if (contentType === 'prod-sales-region') {
+        board.innerHTML = `
+                        <div class="card-title">${this.getContentTitle(contentType)}</div>
+                        <div class="time-period-tabs">
+                            <button class="btn time-tab active" data-period="monthly">月度</button>
+                            <button class="btn time-tab" data-period="quarterly">季度</button>
+                            <button class="btn time-tab" data-period="yearly">年度</button>
+                            <button class="btn" id="toggle-prod-region-btn">切换到省份视图</button>
+                        </div>
+                        <div id="prod-sales-region-chart" style="width: 100%; height: 500px;"></div>
+                    `;
+        this.contentArea.appendChild(board);
+        requestAnimationFrame(() => {
+          board.classList.add('visible');
+          setTimeout(() => this.initProdRegionSalesChart('monthly'), 100);
+        });
+      } else if (contentType === 'prod-sales-color') {
+        board.innerHTML = `
+                        <div class="card-title">${this.getContentTitle(contentType)}</div>
+                        <div class="time-period-tabs">
+                            <button class="btn time-tab active" data-period="production">生产量</button>
+                            <button class="btn time-tab" data-period="sales">销售量</button>
+                            <button class="btn time-tab" data-period="inventory">库存压力</button>
+                        </div>
+                        <div id="prod-sales-color-chart" style="width: 100%; height: 500px;"></div>
+                    `;
+        this.contentArea.appendChild(board);
+        requestAnimationFrame(() => {
+          board.classList.add('visible');
+          setTimeout(() => this.initProdColorSalesChart('production'), 100);
+        });
+      } else {
+        board.innerHTML = `
+                        <div class="card-title">${this.getContentTitle(contentType)}</div>
+                        <div class="metric-value">1,234,567</div>
+                        <div class="metric-trend">增长 12%</div>`;
+        this.contentArea.appendChild(board);
+        requestAnimationFrame(() => board.classList.add('visible'));
+      }
+
+      this.updateBreadcrumb(this.getContentTitle(contentType));
+    }
+
+    initTabListeners() {
+      const tabs = document.querySelectorAll('.time-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const period = tab.dataset.period;
+          this.initTimeSalesChart(period);
+        });
+      });
+    }
+
+    initInventoryLogTabListeners() {
+      const tabs = document.querySelectorAll('.time-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          const period = tab.dataset.period;
+          this.initInventoryLogChart(period);
+        });
+      });
+    }
+
+    getContentTitle(contentType) {
+      const titles = {
+        'sales-by-time': '各时段销售情况',
+        'sales-by-age': '各年龄段销售情况',
+        'sales-by-region': '各地区销售情况',
+        'sales-by-color': '各型号销售情况',
+        'inventory-status': '库存状态',
+        'inventory-log': '出入记录',
+        'model-pressure': '各型号压仓情况',
+        'region-pressure': '各地区压仓情况',
+        'prod-sales-region': '各地区销售与计划',
+      };
+      return titles[contentType] || '各型号流转情况';
+    }
+
+    updateBreadcrumb(title) {
+      this.breadcrumb.innerHTML = `
+                    <span class="breadcrumb-item">首页</span>
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-item active">${title}</span>
+                `;
+    }
+
+    // 各时段销售数据情况
+    generateSalesData(period) {
+      const brands = ['奥迪', '奔驰', '宝马', '法拉利', '柯尼塞格'];
+      const colors = ['#1e90ff', '#40c4ff', '#52c41a', '#ffaa00', '#ff4d4f']; // 优化：调整颜色为更鲜艳的调色板
+
+      // 周期配置
+      const periodConfigs = {
+        monthly: {
+          xAxisData: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+          periods: 12,
+          minSales: 50000,
+          maxSales: 200000
+        },
+        quarterly: {
+          xAxisData: ['Q1', 'Q2', 'Q3', 'Q4'],
+          periods: 4,
+          minSales: 150000,
+          maxSales: 600000
+        },
+        yearly: {
+          xAxisData: ['2020', '2021', '2022', '2023', '2024'],
+          periods: 5,
+          minSales: 500000,
+          maxSales: 2000000
+        }
+      };
+
+      // 获取周期配置，默认使用yearly
+      const config = periodConfigs[period] || periodConfigs.yearly;
+
+      // 生成平滑趋势的随机销售数据
+      const generateSmoothSales = (periods, min, max) => {
+        const data = [];
+        let lastValue = generateRandomSales(min, max);
+        for (let i = 0; i < periods; i++) {
+          // 添加趋势平滑性：基于上一个值小范围波动
+          const fluctuation = Math.random() * (max - min) * 0.1 * (Math.random() > 0.5 ? 1 : -1);
+          lastValue = Math.max(min, Math.min(max, lastValue + fluctuation));
+          data.push(Math.floor(lastValue));
+        }
+        return data;
+      };
+
+      // 生成随机销售额工具函数
+      const generateRandomSales = (min, max) =>
+              Math.floor(Math.random() * (max - min + 1) + min);
+
+      // 生成销售数据
+      const salesData = brands.map(() => generateSmoothSales(config.periods, config.minSales, config.maxSales));
+
+      // 通用系列配置
+      const baseSeriesConfig = {
+        type: 'line',
+        smooth: 0.6,
+        label: {
+          show: false,
+          position: 'top',
+          color: '#e6e9f0',
+          formatter: params => `¥${params.value.toLocaleString()}`, // 优化：添加千分位分隔符
+          distance: 12,
+          fontSize: 12,
+          fontFamily: 'Arial', // 优化：统一字体
+          textBorderColor: '#0d1b2a', // 优化：文字描边提升对比度
+          textBorderWidth: 1.5
+        },
+        emphasis: {
+          focus: 'series',
+          scale: true, // 优化：交互时放大效果
+          label: {
+            show: true,
+            fontWeight: '500',
+            backgroundColor: 'rgba(30, 36, 50, 0.95)',
+            padding: [5, 10],
+            borderRadius: 4,
+            borderWidth: 1,
+            borderColor: 'rgba(255, 255, 255, 0.1)'
+          },
+          itemStyle: {
+            shadowBlur: 15, // 优化：交互时阴影效果
+            shadowColor: 'rgba(255, 255, 255, 0.4)'
+          }
+        },
+        symbol: 'circle',
+        symbolSize: (value, params) => { // 优化：根据数据大小动态调整symbol尺寸
+          const normalized = (value - config.minSales) / (config.maxSales - config.minSales);
+          return 6 + normalized * 4; // 6-10之间变化
+        },
+        lineStyle: {
+          width: 2.5,
+          shadowColor: 'rgba(0, 0, 0, 0.25)',
+          shadowBlur: 8,
+          shadowOffsetY: 2
+        },
+        areaStyle: {
+          opacity: 0.15, // 优化：稍微增加透明度
+          color: params => new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: colors[params.dataIndex % colors.length] + '80' }, // 优化：渐变区域
+            { offset: 1, color: colors[params.dataIndex % colors.length] + '00' }
+          ])
+        },
+        animationDuration: 1500, // 优化：延长动画时间更平滑
+        animationEasing: 'cubicOut', // 优化：更自然的缓动函数
+        animationDelay: idx => idx * 100 // 优化：逐条线延迟动画
+      };
+
+      return {
+        xAxisData: config.xAxisData,
+        series: brands.map((name, i) => ({
+          ...baseSeriesConfig,
+          name,
+          data: salesData[i],
+          itemStyle: {
+            color: colors[i],
+            shadowBlur: 5,
+            shadowColor: 'rgba(0, 0, 0, 0.2)'
+          }
+        }))
+      };
+    }
+
+    // 出入记录数据图表
+    generateInventoryLogData(period) {
+      let xAxisData, inData, outData;
+
+      if (period === 'monthly') {
+        xAxisData = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+        inData = Array(12).fill(0).map(() => Math.floor(Math.random() * 200 + 50));
+        outData = Array(12).fill(0).map(() => Math.floor(Math.random() * 150 + 30));
+      } else if (period === 'weekly') {
+        xAxisData = ['第1周', '第2周', '第3周', '第4周'];
+        inData = Array(4).fill(0).map(() => Math.floor(Math.random() * 300 + 100));
+        outData = Array(4).fill(0).map(() => Math.floor(Math.random() * 200 + 50));
+      } else {
+        xAxisData = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+        inData = Array(7).fill(0).map(() => Math.floor(Math.random() * 100 + 20));
+        outData = Array(7).fill(0).map(() => Math.floor(Math.random() * 80 + 10));
+      }
+
+      return { xAxisData, inData, outData };
+    }
+
+
+    // 月度 季度年度视图
+    initTimeSalesChart(period) {
+      const chartDom = document.getElementById('sales-by-time-chart');
+      if (!chartDom) return;
+
+      chartDom.style.width = '100%';
+      chartDom.style.height = '500px';
+      let myChart = echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
+
+      const { xAxisData, series } = this.generateSalesData(period);
+
+      const option = {
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'cross', label: { backgroundColor: '#6a7985' } },
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          borderWidth: 0,
+          padding: [10, 15],
+          textStyle: { color: '#fff', fontSize: 12 },
+          formatter: params => {
+            if (!params || !params.length) return '';
+            let result = `<strong>${params[0].name}</strong><br/>`;
+            const sortedParams = params.sort((a, b) => b.value - a.value);
+            sortedParams.forEach(p => {
+              result += `${p.marker} ${p.seriesName}: <span style="font-weight: bold; color: ${p.color}">¥${p.value.toLocaleString()}</span><br/>`;
+            });
+            return result;
+          }
+        },
+        legend: {
+          top: '2%',
+          textStyle: { color: 'rgba(255, 255, 255, 0.85)', fontSize: 14 },
+          itemWidth: 20,
+          itemHeight: 12,
+          itemGap: 15
+        },
+        grid: {
+          left: '4%',
+          right: '4%',
+          bottom: '15%',
+          top: '20%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          boundaryGap: false,
+          data: xAxisData,
+          axisLabel: {
+            color: 'rgba(255, 255, 255, 0.75)',
+            fontSize: 12,
+            rotate: period === 'monthly' ? 45 : 0,
+            interval: 0
+          },
+          axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.2)' } }
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: {
+            color: 'rgba(255, 255, 255, 0.75)',
+            formatter: value => `¥${(value / 10000).toFixed(1)}万`,
+            fontSize: 12
+          },
+          splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)', type: 'dashed' } },
+          name: '销售额 (万元)',
+          nameTextStyle: { color: 'rgba(255, 255, 255, 0.85)' }
+        },
+        series: series.map(serie => ({
+          ...serie,
+          areaStyle: { opacity: 0.2, color: serie.itemStyle.color }
+        })),
+        toolbox: {
+          feature: {
+            saveAsImage: { title: '保存为图片', backgroundColor: '#0d1b2a' },
+            dataZoom: { title: { zoom: '区域缩放', back: '还原' } }
+          },
+          iconStyle: { borderColor: 'rgba(255, 255, 255, 0.75)' }
+        },
+        dataZoom: [
+          { type: 'inside', start: 0, end: 100 },
+          { type: 'slider', bottom: 10, height: 20, backgroundColor: 'rgba(255, 255, 255, 0.1)', fillerColor: 'rgba(24, 144, 255, 0.3)', borderColor: 'rgba(255, 255, 255, 0.2)', handleStyle: { color: 'rgba(24, 144, 255, 0.8)' }, textStyle: { color: 'rgba(255, 255, 255, 0.75)' } }
+        ]
+      };
+
+      myChart.setOption(option, true);
+      window.removeEventListener('resize', myChart.resize);
+      window.addEventListener('resize', () => myChart.resize());
+    }
+
+
+                                    // 出入记录数据图表
+    initInventoryLogChart(period) {
+      const chartDom = document.getElementById('inventory-log-chart');
+      if (!chartDom) return;
+
+      chartDom.style.width = '100%';
+      chartDom.style.height = '500px';
+      let myChart = echarts.getInstanceByDom(chartDom) || echarts.init(chartDom);
+
+      const { xAxisData, inData, outData } = this.generateInventoryLogData(period);
+
+      const option = {
+        backgroundColor: '#0d1b2a',  // 优化：使用更深的背景色提升对比度
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            type: 'cross',
+            label: {
+              backgroundColor: '#4a5a71'  // 优化：使用更柔和的灰蓝色
+            }
+          },
+          backgroundColor: 'rgba(30, 36, 50, 0.95)',  // 优化：半透明深色背景
+          borderWidth: 1,
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          padding: [8, 12],
+          textStyle: {
+            color: '#e6e9f0',
+            fontSize: 13,
+            fontFamily: 'Arial'  // 优化：添加字体提升质感
+          },
+          formatter: params => {
+            if (!params || !params.length) return '';
+            let result = `<div style="font-weight: 600; margin-bottom: 4px">${params[0].name}</div>`;
+            params.forEach(p => {
+              result += `${p.marker} ${p.seriesName}: <span style="font-weight: 500; color: ${p.color}">${p.value} 台</span><br/>`;
+            });
+            return result;
+          }
+        },
+        legend: {
+          top: '2%',
+          textStyle: {
+            color: '#d9e2ec',
+            fontSize: 13,
+            fontFamily: 'Arial'
+          },
+          itemWidth: 24,
+          itemHeight: 14,
+          itemGap: 20,
+          padding: [0, 0, 10, 0]  // 优化：添加底部间距
+        },
+        grid: {
+          left: '3%',
+          right: '3%',
+          bottom: '15%',
+          top: '15%',  // 优化：缩小顶部间距
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          boundaryGap: false,
+          data: xAxisData,
+          axisLabel: {
+            color: '#b0bec5',
+            fontSize: 12,
+            rotate: period === 'monthly' ? 45 : 0,
+            interval: 0,
+            margin: 10
+          },
+          axisLine: {
+            lineStyle: {
+              color: 'rgba(255, 255, 255, 0.15)'
+            }
+          },
+          axisTick: {
+            show: true,
+            lineStyle: { color: 'rgba(255, 255, 255, 0.15)' }
+          }
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: {
+            color: '#b0bec5',
+            formatter: '{value} 台',
+            fontSize: 12
+          },
+          splitLine: {
+            lineStyle: {
+              color: 'rgba(255, 255, 255, 0.08)',
+              type: 'dashed'
+            }
+          },
+          name: '数量 (台)',
+          nameTextStyle: {
+            color: '#d9e2ec',
+            fontSize: 13,
+            padding: [0, 0, 10, 0]  // 优化：调整名称位置
+          }
+        },
+        series: [
+          {
+            name: '入库',
+            type: 'line',
+            smooth: 0.6,  // 优化：调整曲线平滑度
+            data: inData,
+            itemStyle: {
+              color: '#73d13d'  // 优化：使用更鲜明的绿色
+            },
+            areaStyle: {
+              opacity: 0.15,
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(115, 209, 61, 0.3)' },
+                { offset: 1, color: 'rgba(115, 209, 61, 0)' }
+              ])
+            },
+            symbol: 'circle',
+            symbolSize: 6,
+            lineStyle: { width: 2 },
+            emphasis: {
+              focus: 'series',
+              itemStyle: { borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.8)' }
+            }
+          },
+          {
+            name: '出库',
+            type: 'line',
+            smooth: 0.6,
+            data: outData,
+            itemStyle: {
+              color: '#ff4d4f'  // 优化：使用更鲜艳的红色
+            },
+            areaStyle: {
+              opacity: 0.15,
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(255, 77, 79, 0.3)' },
+                { offset: 1, color: 'rgba(255, 77, 79, 0)' }
+              ])
+            },
+            symbol: 'circle',
+            symbolSize: 6,
+            lineStyle: { width: 2 },
+            emphasis: {
+              focus: 'series',
+              itemStyle: { borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.8)' }
+            }
+          }
+        ],
+        toolbox: {
+          right: 20,
+          feature: {
+            saveAsImage: {
+              title: '保存图片',
+              backgroundColor: '#0d1b2a',
+              name: `inventory_log_${new Date().toISOString().slice(0,10)}`
+            },
+            dataZoom: {
+              title: {
+                zoom: '缩放',
+                back: '重置'
+              }
+            }
+          },
+          iconStyle: {
+            borderColor: '#b0bec5'
+          }
+        },
+        dataZoom: [
+          {
+            type: 'inside',
+            start: 0,
+            end: 100,
+            zoomLock: false
+          },
+          {
+            type: 'slider',
+            bottom: 15,
+            height: 24,
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            fillerColor: 'rgba(24, 144, 255, 0.25)',
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            handleStyle: {
+              color: '#40c4ff',
+              borderColor: 'rgba(255, 255, 255, 0.3)'
+            },
+            textStyle: {
+              color: '#b0bec5',
+              fontSize: 12
+            }
+          }
+        ],
+        animationEasing: 'elasticOut',  // 优化：添加动画效果
+        animationDuration: 1000
+      };
+      myChart.setOption(option, true);
+      window.removeEventListener('resize', myChart.resize);
+      window.addEventListener('resize', () => myChart.resize());
+    }
+
+
+                                          // 各年龄段销售数据图表
+    initAgeSalesChart() {
+      const chartDom = document.getElementById('sales-by-age-chart');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom);
+
+      // 数据和颜色常量
+      const ageGroups = ['0-18', '19-30', '31-45', '46-60', '60+'];
+      const brands = [
+        { name: '奥迪', data: [50, 200, 300, 150, 80], color: '#1890ff' },
+        { name: '奔驰', data: [20, 100, 150, 70, 30], color: '#40c4ff' },
+        { name: '宝马', data: [30, 120, 180, 90, 40], color: '#52c41a' },
+        { name: '法拉利', data: [40, 150, 200, 100, 50], color: '#faad14' },
+        { name: '柯尼塞格', data: [100, 300, 400, 200, 100], color: '#f5222d' }
+      ];
+
+      // 计算总数用于百分比
+      const totalByAge = ageGroups.map((_, i) =>
+              brands.reduce((sum, brand) => sum + brand.data[i], 0)
+      );
+
+      const option = {
+        // 背景色
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+
+        // 标题
+        title: {
+          text: '各年龄段销售情况',
+          left: 'center',
+          top: 10,
+          textStyle: { color: 'rgba(255, 255, 255, 0.9)', fontSize: 18, fontWeight: 'bold' }
+        },
+
+        // 工具提示
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          borderWidth: 0,
+          padding: [10, 15],
+          textStyle: { color: '#fff', fontSize: 14 },
+          formatter: params => {
+            const ageGroup = params[0].name;
+            const total = totalByAge[params[0].dataIndex];
+            let result = `<strong>${ageGroup}</strong><br/>`;
+            params.forEach(p => {
+              const percentage = ((p.value / total) * 100).toFixed(1);
+              result += `${p.marker} ${p.seriesName}: <span style="font-weight: bold; color: ${p.color}">${p.value} 台 (${percentage}%)</span><br/>`;
+            });
+            result += `<strong>总数: ${total} 台</strong>`;
+            return result;
+          }
+        },
+
+        // 图例
+        legend: {
+          top: 'bottom',
+          textStyle: { color: 'rgba(255, 255, 255, 0.85)', fontSize: 12 },
+          itemWidth: 20,
+          itemHeight: 10,
+          itemGap: 15,
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: 4,
+          padding: 5
+        },
+
+        // 网格
+        grid: {
+          left: '5%',
+          right: '5%',
+          bottom: '15%',
+          top: '15%',
+          containLabel: true
+        },
+
+        // X 轴（数值轴）
+        xAxis: {
+          type: 'value',
+          axisLabel: {
+            color: 'rgba(255, 255, 255, 0.75)',
+            fontSize: 12,
+            formatter: '{value} 台'
+          },
+          splitLine: {
+            lineStyle: { color: 'rgba(255, 255, 255, 0.1)', type: 'dashed' }
+          },
+          name: '销售量 (台)',
+          nameTextStyle: { color: 'rgba(255, 255, 255, 0.85)', padding: [0, 0, 10, 0] }
+        },
+
+        // Y 轴（类别轴）00.
+        yAxis: {
+          type: 'category',
+          data: ageGroups,
+          axisLabel: {
+            color: 'rgba(255, 255, 255, 0.75)',
+            fontSize: 12,
+            fontWeight: 'bold'
+          },
+          axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.2)' } },
+          axisTick: { show: false }
+        },
+        // 数据系列
+        series: brands.map(brand => ({
+          name: brand.name,
+          type: 'bar',
+          stack: 'total',
+          barWidth: '60%', // 动态调整柱子宽度
+          label: {
+            show: true,
+            position: 'inside',
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 'bold',
+            formatter: params => params.value > 50 ? `${params.value}` : '' // 避免小数值重叠
+          },
+          emphasis: {
+            focus: 'series',
+            itemStyle: {
+              shadowBlur: 20,
+              shadowColor: 'rgba(24, 144, 255, 0.5)'
+            }
+          },
+          data: brand.data,
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: brand.color },
+              { offset: 1, color: echarts.color.modifyAlpha(brand.color, 0.7) }
+            ]),
+            borderRadius: [4, 4, 0, 0],
+            shadowBlur: 10,
+            shadowColor: 'rgba(0, 0, 0, 0.3)'
+          },
+          animationDuration: 1000,
+          animationEasing: 'elasticOut'
+        })),
+        // 工具箱
+        toolbox: {
+          right: 20,
+          feature: {
+            saveAsImage: { title: '保存为图片', backgroundColor: '#0d1b2a' },
+            dataZoom: { title: { zoom: '区域缩放', back: '还原' } },
+            magicType: { type: ['bar', 'stack'], title: { bar: '柱状图', stack: '堆叠图' } }
+          },
+          iconStyle: { borderColor: 'rgba(255, 255, 255, 0.75)' }
+        },
+        // 数据缩放
+        dataZoom: [
+          { type: 'inside', start: 0, end: 100 },
+          {
+            type: 'slider',
+            bottom: 10,
+            height: 20,
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            fillerColor: 'rgba(24, 144, 255, 0.3)',
+            borderColor: 'rgba(255, 255, 255, 0.2)',
+            handleStyle: { color: 'rgba(24, 144, 255, 0.8)' },
+            textStyle: { color: 'rgba(255, 255, 255, 0.75)' }
+          }
+        ]
+      };
+
+      myChart.setOption(option);
+      // 窗口自适应
+      window.removeEventListener('resize', myChart.resize);
+      window.addEventListener('resize', () => myChart.resize());
+      // 点击高亮系列
+      myChart.on('click', params => {
+        if (params.componentType === 'series') {
+          myChart.dispatchAction({
+            type: 'highlight',
+            seriesIndex: params.seriesIndex
+          });
+        }
+      });
+    }initAgeSalesChart() {
+      const chartDom = document.getElementById('sales-by-age-chart');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom);
+      // 数据和颜色常量
+      const ageGroups = ['0-18', '19-30', '31-45', '46-60', '60+'];
+      const brands = [
+        { name: '奥迪', data: [50, 200, 300, 150, 80], color: '#1890ff' },
+        { name: '奔驰', data: [20, 100, 150, 70, 30], color: '#40c4ff' },
+        { name: '宝马', data: [30, 120, 180, 90, 40], color: '#52c41a' },
+        { name: '法拉利', data: [40, 150, 200, 100, 50], color: '#faad14' },
+        { name: '柯尼塞格', data: [100, 300, 400, 200, 100], color: '#f5222d' }
+      ];
+      // 计算总数用于百分比
+      const totalByAge = ageGroups.map((_, i) =>
+              brands.reduce((sum, brand) => sum + brand.data[i], 0)
+      );
+      const option = {
+        // 背景色
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        // 标题
+        title: {
+          text: '各年龄段销售情况',
+          left: 'center',
+          top: 10,
+          textStyle: { color: 'rgba(255, 255, 255, 0.9)', fontSize: 18, fontWeight: 'bold' }
+        },
+        // 工具提示
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: { type: 'shadow' },
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+          borderWidth: 0,
+          padding: [10, 15],
+          textStyle: { color: '#fff', fontSize: 14 },
+          formatter: params => {
+            const ageGroup = params[0].name;
+            const total = totalByAge[params[0].dataIndex];
+            let result = `<strong>${ageGroup}</strong><br/>`;
+            params.forEach(p => {
+              const percentage = ((p.value / total) * 100).toFixed(1);
+              result += `${p.marker} ${p.seriesName}: <span style="font-weight: bold; color: ${p.color}">${p.value} 台 (${percentage}%)</span><br/>`;
+            });
+            result += `<strong>总数: ${total} 台</strong>`;
+            return result;
+          }
+        },
+        // 图例
+        legend: {
+          top: 'bottom',
+          textStyle: { color: 'rgba(255, 255, 255, 0.85)', fontSize: 12 },
+          itemWidth: 20,
+          itemHeight: 10,
+          itemGap: 15,
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: 4,
+          padding: 5
+        },
+        // 网格
+        grid: {
+          left: '5%',
+          right: '5%',
+          bottom: '15%',
+          top: '15%',
+          containLabel: true
+        },
+        // X 轴（数值轴）
+        xAxis: {
+          type: 'value',
+          axisLabel: {
+            color: 'rgba(255, 255, 255, 0.75)',
+            fontSize: 12,
+            formatter: '{value} 台'
+          },
+          splitLine: {
+            lineStyle: { color: 'rgba(255, 255, 255, 0.1)', type: 'dashed' }
+          },
+          name: '销售量 (台)',
+          nameTextStyle: { color: 'rgba(255, 255, 255, 0.85)', padding: [0, 0, 10, 0] }
+        },
+
+        // Y 轴（类别轴）
+        yAxis: {
+          type: 'category',
+          data: ageGroups,
+          axisLabel: {
+            color: 'rgba(255, 255, 255, 0.75)',
+            fontSize: 12,
+            fontWeight: 'bold'
+          },
+          axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.2)' } },
+          axisTick: { show: false }
+        },
+
+        // 数据系列
+        series: brands.map(brand => ({
+          name: brand.name,
+          type: 'bar',
+          stack: 'total',
+          barWidth: '60%', // 动态调整柱子宽度
+          label: {
+            show: true,
+            position: 'inside',
+            color: '#fff',
+            fontSize: 12,
+            fontWeight: 'bold',
+            formatter: params => params.value > 50 ? `${params.value}` : '' // 避免小数值重叠
+          },
+          emphasis: {
+            focus: 'series',
+            itemStyle: {
+              shadowBlur: 20,
+              shadowColor: 'rgba(24, 144, 255, 0.5)'
+            }
+          },
+          data: brand.data,
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: brand.color },
+              { offset: 1, color: echarts.color.modifyAlpha(brand.color, 0.7) }
+            ]),
+            borderRadius: [4, 4, 0, 0],
+            shadowBlur: 10,
+            shadowColor: 'rgba(0, 0, 0, 0.3)'
+          },
+          animationDuration: 1000,
+          animationEasing: 'elasticOut'
+        })),
+
+        // 工具箱
+        toolbox: {
+          right: 20,
+          feature: {
+            saveAsImage: { title: '保存为图片', backgroundColor: '#0d1b2a' },
+            dataZoom: { title: { zoom: '区域缩放', back: '还原' } },
+            magicType: { type: ['bar', 'stack'], title: { bar: '柱状图', stack: '堆叠图' } }
+          },
+          iconStyle: { borderColor: 'rgba(255, 255, 255, 0.75)' }
+        },
+
+        // 数据缩放
+        dataZoom: [
+          { type: 'inside', start: 0, end: 100 },
+          {
+            type: 'slider',
+            bottom: 10,
+            height: 20,
+            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+            fillerColor: 'rgba(24, 144, 255, 0.3)',
+            borderColor: 'rgba(255, 255, 255, 0.2)',
+            handleStyle: { color: 'rgba(24, 144, 255, 0.8)' },
+            textStyle: { color: 'rgba(255, 255, 255, 0.75)' }
+          }
+        ]
+      };
+      myChart.setOption(option);
+      // 窗口自适应
+      window.removeEventListener('resize', myChart.resize);
+      window.addEventListener('resize', () => myChart.resize());
+      // 点击高亮系列
+      myChart.on('click', params => {
+        if (params.componentType === 'series') {
+          myChart.dispatchAction({
+            type: 'highlight',
+            seriesIndex: params.seriesIndex
+          });
+        }
+      });
+    }
+
+
+    // 各地区销售情况
+    initRegionSalesChart() {
+      const chartDom = document.getElementById('sales-by-region-chart');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom);
+      const toggleBtn = document.getElementById('toggle-region-btn');
+
+      const regions = ['华北', '华东', '华南', '华中', '西南', '西北', '东北'];
+      const provinces = [
+        '北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江',
+        '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南',
+        '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州',
+        '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆', '香港', '澳门', '台湾'
+      ];
+      const brands = ['奥迪', '奔驰', '宝马', '法拉利', '柯尼塞格'];
+      const colors = ['#1890ff', '#40c4ff', '#52c41a', '#faad14', '#f5222d'];
+
+      const regionSalesData = brands.map(() => regions.map(() => Math.floor(Math.random() * 1000 + 200)));
+      const provinceSalesData = brands.map(() => provinces.map(() => Math.floor(Math.random() * 500 + 50)));
+
+      let isProvinceView = false;
+
+      const updateChart = () => {
+        const currentData = isProvinceView ? provinces : regions;
+        const currentSalesData = isProvinceView ? provinceSalesData : regionSalesData;
+
+        const option = {
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'shadow' },
+            formatter: params => {
+              let result = `<strong>${params[0].name}</strong><br/>`;
+              params.sort((a, b) => b.value - a.value).forEach(p => {
+                result += `${p.marker} ${p.seriesName}: ¥${p.value.toLocaleString()}万<br/>`;
+              });
+              return result;
+            }
+          },
+          legend: { top: '2%', textStyle: { color: 'rgba(255, 255, 255, 0.85)' } },
+          grid: { left: '5%', right: '5%', bottom: isProvinceView ? '15%' : '10%', top: '20%', containLabel: true },
+          xAxis: {
+            type: 'category',
+            data: currentData,
+            axisLabel: { color: 'rgba(255, 255, 255, 0.75)', rotate: isProvinceView ? 45 : 0, interval: 0 }
+          },
+          yAxis: {
+            type: 'value',
+            axisLabel: { color: 'rgba(255, 255, 255, 0.75)', formatter: '¥{value}万' },
+            splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)', type: 'dashed' } }
+          },
+          series: brands.map((brand, i) => ({
+            name: brand,
+            type: 'bar',
+            barWidth: isProvinceView ? 10 : 20,
+            data: currentSalesData[i],
+            itemStyle: { color: colors[i] }
+          })),
+          toolbox: {
+            feature: {
+              saveAsImage: { backgroundColor: '#0d1b2a' },
+              dataZoom: {},
+              magicType: { type: ['line', 'bar'] }
+            }
+          },
+          dataZoom: isProvinceView ? [
+            { type: 'slider', start: 0, end: 30 },
+            { type: 'inside', start: 0, end: 30 }
+          ] : []
+        };
+
+        myChart.setOption(option, true);
+      };
+
+      updateChart();
+
+      toggleBtn.addEventListener('click', () => {
+        isProvinceView = !isProvinceView;
+        toggleBtn.textContent = isProvinceView ? '切换到大区数据' : '切换到省份数据';
+        updateChart();
+      });
+
+      window.removeEventListener('resize', myChart.resize);
+      window.addEventListener('resize', () => myChart.resize());
+    }
+
+
+    // 各型号销售情况
+    initModelSalesChart() {
+      const chartDom = document.getElementById('sales-by-model-chart');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom);
+
+      const models = [
+        { name: '奥迪 A6', salesValue: Math.floor(Math.random() * 500000 + 100000), units: Math.floor(Math.random() * 1000 + 200), growth: (Math.random() * 20 - 5).toFixed(1) },
+        { name: '奔驰 C级', salesValue: Math.floor(Math.random() * 500000 + 100000), units: Math.floor(Math.random() * 1000 + 200), growth: (Math.random() * 20 - 5).toFixed(1) },
+        { name: '宝马 3系', salesValue: Math.floor(Math.random() * 500000 + 100000), units: Math.floor(Math.random() * 1000 + 200), growth: (Math.random() * 20 - 5).toFixed(1) },
+        { name: '法拉利 488', salesValue: Math.floor(Math.random() * 500000 + 100000), units: Math.floor(Math.random() * 1000 + 200), growth: (Math.random() * 20 - 5).toFixed(1) },
+        { name: '柯尼塞格 Jesko', salesValue: Math.floor(Math.random() * 500000 + 100000), units: Math.floor(Math.random() * 1000 + 200), growth: (Math.random() * 20 - 5).toFixed(1) }
+      ];
+      const colors = ['#1890ff', '#40c4ff', '#52c41a', '#faad14', '#f5222d'];
+
+      const option = {
+        backgroundColor: '#0d1b2a',  // 优化：使用深色背景提升对比度
+        tooltip: {
+          trigger: 'item',
+          backgroundColor: 'rgba(30, 36, 50, 0.95)',  // 优化：更现代的半透明背景
+          borderWidth: 1,
+          borderColor: 'rgba(255, 255, 255, 0.1)',
+          padding: [10, 15],
+          textStyle: {
+            color: '#e6e9f0',
+            fontSize: 13,
+            fontFamily: 'Arial'  // 优化：统一字体风格
+          },
+          formatter: params => {
+            const data = params.data;
+            const growthColor = data.growth >= 0 ? '#52c41a' : '#f5222d';
+            return `<div style="font-weight: 600">${params.seriesName}</div>
+                        ${params.marker} ${data.name}<br/>
+                        销售额: <span style="color: #40c4ff">¥${data.value.toLocaleString()}</span> (${params.percent}%)<br/>
+                        销量: <span style="color: #faad14">${data.units}</span>侧边栏模块 台<br/>
+                        同比增长: <span style="color: ${growthColor}">${data.growth}%</span>`;
+          }
+        },
+        legend: {
+          orient: 'vertical',
+          left: '5%',
+          top: 'center',
+          padding: [10, 0],
+          itemGap: 15,
+          itemWidth: 20,
+          itemHeight: 12,
+          textStyle: {
+            color: '#d9e2ec',
+            fontSize: 13,
+            fontFamily: 'Arial'
+          },
+          backgroundColor: 'rgba(255, 255, 255, 0.03)',  // 优化：添加微透明背景
+          borderRadius: 4,
+          formatter: name => {
+            const item = models.find(m => m.name === name);
+            return `${name} (¥${(item.salesValue / 10000).toFixed(1)}万)`;
+          }
+        },
+        toolbox: {
+          right: 20,
+          feature: {
+            saveAsImage: {
+              title: '保存图片',
+              backgroundColor: '#0d1b2a',
+              name: `model_sales_${new Date().toISOString().slice(0,10)}`
+            },
+            dataView: {
+              readOnly: true,
+              title: '数据视图',
+              lang: ['数据视图', '关闭', '刷新']
+            },
+            magicType: {
+              type: ['pie', 'bar'],
+              title: { pie: '切换饼图', bar: '切换柱图' }
+            }
+          },
+          iconStyle: {
+            borderColor: '#b0bec5'
+          }
+        },
+        series: [
+          {
+            name: '销售额分布',
+            type: 'pie',
+            radius: ['45%', '75%'],  // 优化：增大环形图尺寸
+            center: ['65%', '50%'],  // 优化：调整中心位置
+            roseType: 'area',
+            itemStyle: {
+              borderRadius: 6,
+              color: params => colors[params.dataIndex % colors.length],
+              shadowBlur: 10,  // 优化：添加阴影效果
+              shadowColor: 'rgba(0, 0, 0, 0.3)'
+            },
+            label: {
+              show: true,
+              position: 'outside',
+              formatter: '{b}\n¥{@(c / 10000).toFixed(1)}万\n({d}%)',
+              color: '#d9e2ec',
+              fontSize: 12,
+              distance: 10,
+              textBorderColor: '#0d1b2a',  // 优化：添加文字描边提升可读性
+              textBorderWidth: 2
+            },
+            labelLine: {
+              length: 10,
+              length2: 15,
+              smooth: 0.2  // 优化：平滑引导线
+            },
+            emphasis: {
+              itemStyle: {
+                shadowBlur: 20,
+                shadowOffsetX: 0,
+                shadowColor: 'rgba(255, 255, 255, 0.5)'
+              }
+            },
+            data: models.map(item => ({
+              value: item.salesValue,
+              name: item.name,
+              units: item.units,
+              growth: item.growth
+            })),
+            animationType: 'scale',
+            animationEasing: 'elasticOut',  // 优化：添加动画效果
+            animationDuration: 1200
+          }
+        ]
+      };
+
+      myChart.setOption(option);
+      window.removeEventListener('resize', myChart.resize);
+      window.addEventListener('resize', () => myChart.resize());
+    }
+
+    // 库存状态数据图
+    initInventoryStatusChart() {
+      const chartDom = document.getElementById('inventory-status-chart');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom);
+
+      const inventoryData = [
+        { name: '奥迪 A6', stock: Math.floor(Math.random() * 500 + 100) },
+        { name: '奔驰 C级', stock: Math.floor(Math.random() * 500 + 100) },
+        { name: '宝马 3系', stock: Math.floor(Math.random() * 500 + 100) },
+        { name: '法拉利 488', stock: Math.floor(Math.random() * 500 + 100) },
+        { name: '柯尼塞格 Jesko', stock: Math.floor(Math.random() * 500 + 100) }
+      ];
+      const colors = ['#1890ff', '#40c4ff', '#52c41a', '#faad14', '#f5222d'];
+
+      const option = {
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: params => `${params[0].name}: ${params[0].value} 台` },
+        legend: { top: '2%', textStyle: { color: 'rgba(255, 255, 255, 0.85)' } },
+        toolbox: { feature: { saveAsImage: { backgroundColor: '#0d1b2a' }, dataView: { readOnly: true }, magicType: { type: ['bar', 'line'] } } },
+        grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: inventoryData.map(item => item.name),
+          axisLabel: { color: 'rgba(255, 255, 255, 0.65)', rotate: 45, interval: 0 }
+        },
+        yAxis: {
+          type: 'value',
+          name: '库存数量 (台)',
+          axisLabel: { color: 'rgba(255, 255, 255, 0.65)', formatter: '{value} 台' },
+          splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)', type: 'dashed' } }
+        },
+        series: [{
+          name: '库存状态',
+          type: 'bar',
+          barWidth: 20,
+          data: inventoryData.map((item, i) => ({ value: item.stock, itemStyle: { color: colors[i % colors.length] } })),
+          label: { show: true, position: 'top', color: '#fff', formatter: '{c} 台' }
+        }]
+      };
+
+      myChart.setOption(option);
+      window.removeEventListener('resize', myChart.resize);
+      window.addEventListener('resize', () => myChart.resize());
+    }
+
+
+    // 各型号压仓情况
+    initModelPressureChart() {
+      const chartDom = document.getElementById('model-pressure-chart');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom);
+
+      const pressureData = [
+        { name: '奥迪 A6', pressure: Math.floor(Math.random() * 300 + 50) },
+        { name: '奔驰 C级', pressure: Math.floor(Math.random() * 300 + 50) },
+        { name: '宝马 3系', pressure: Math.floor(Math.random() * 300 + 50) },
+        { name: '法拉利 488', pressure: Math.floor(Math.random() * 300 + 50) },
+        { name: '柯尼塞格 Jesko', pressure: Math.floor(Math.random() * 300 + 50) }
+      ];
+      const colors = ['#1890ff', '#40c4ff', '#52c41a', '#faad14', '#f5222d'];
+
+      const option = {
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' }, formatter: params => `${params[0].name}: ${params[0].value} 台` },
+        legend: { top: '2%', textStyle: { color: 'rgba(255, 255, 255, 0.85)' } },
+        toolbox: { feature: { saveAsImage: { backgroundColor: '#0d1b2a' }, dataView: { readOnly: true }, magicType: { type: ['bar', 'line'] } } },
+        grid: { left: '3%', right: '4%', bottom: '3%', top: '15%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: pressureData.map(item => item.name),
+          axisLabel: { color: 'rgba(255, 255, 255, 0.65)', rotate: 45, interval: 0 }
+        },
+        yAxis: {
+          type: 'value',
+          name: '压仓数量 (台)',
+          axisLabel: { color: 'rgba(255, 255, 255, 0.65)', formatter: '{value} 台' },
+          splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)', type: 'dashed' } }
+        },
+        series: [{
+          name: '压仓情况',
+          type: 'bar',
+          barWidth: 20,
+          data: pressureData.map((item, i) => ({ value: item.pressure, itemStyle: { color: colors[i % colors.length] } })),
+          label: { show: true, position: 'top', color: '#fff', formatter: '{c} 台' }
+        }]
+      };
+
+      myChart.setOption(option);
+      window.removeEventListener('resize', myChart.resize);
+      window.addEventListener('resize', () => myChart.resize());
+    }
+
+
+                                    // 各地区压仓情况
+    initRegionPressureChart() {
+      const chartDom = document.getElementById('region-pressure-chart');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom);
+      const toggleBtn = document.getElementById('toggle-pressure-view');
+
+      const regionData = {
+        '华北': { pressure: 1200, provinces: { '北京': 300, '天津': 250, '河北': 400, '山西': 150, '内蒙古': 100 } },
+        '华东': { pressure: 1800, provinces: { '上海': 400, '江苏': 500, '浙江': 450, '安徽': 250, '福建': 200 } },
+        '华南': { pressure: 1500, provinces: { '广东': 600, '广西': 300, '海南': 200, '香港': 250, '澳门': 150 } },
+        '华中': { pressure: 1000, provinces: { '湖北': 350, '湖南': 300, '河南': 250, '江西': 100 } },
+        '西南': { pressure: 900, provinces: { '重庆': 200, '四川': 300, '贵州': 150, '云南': 150, '西藏': 100 } },
+        '西北': { pressure: 800, provinces: { '陕西': 250, '甘肃': 200, '青海': 150, '宁夏': 100, '新疆': 100 } },
+        '东北': { pressure: 700, provinces: { '辽宁': 250, '吉林': 200, '黑龙江': 250 } }
+      };
+
+      const colors = ['#1890ff', '#40c4ff', '#52c41a', '#faad14', '#f5222d', '#eb2f96', '#13c2c2'];
+      let isProvinceView = false;
+      let currentRegion = null;
+
+      const updateChart = () => {
+        let option;
+
+        if (!isProvinceView || !currentRegion) {
+          const treemapData = Object.entries(regionData).map(([name, data], index) => ({
+            name,
+            value: data.pressure,
+            itemStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: colors[index % colors.length] },
+                { offset: 1, color: echarts.color.modifyAlpha(colors[index % colors.length], 0.7) }
+              ]),
+              borderColor: '#1a3566',
+              borderWidth: 2,
+              shadowBlur: 10,
+              shadowColor: 'rgba(0, 0, 0, 0.3)'
+            }
+          }));
+
+          option = {
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            title: {
+              text: '各地区压仓情况 (大区)',
+              left: 'center',
+              top: 10,
+              textStyle: { color: 'rgba(255, 255, 255, 0.9)', fontSize: 20, fontWeight: 'bold' }
+            },
+            tooltip: {
+              trigger: 'item',
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              borderWidth: 0,
+              padding: [10, 15],
+              textStyle: { color: '#fff', fontSize: 14 },
+              formatter: params => {
+                return `<div style="line-height: 1.6;">
+                                        <strong>${params.name}</strong><br/>
+                                        压仓数量: <span style="font-weight: bold; color: ${colors[params.dataIndex % colors.length]}">${params.value} 台</span><br/>
+                                        点击查看省份详情
+                                    </div>`;
+              }
+            },
+            legend: {
+              show: true,
+              top: 'bottom',
+              textStyle: { color: 'rgba(255, 255, 255, 0.85)', fontSize: 12 },
+              data: Object.keys(regionData),
+              itemWidth: 20,
+              itemHeight: 10,
+              padding: [0, 0, 10, 0]
+            },
+            toolbox: {
+              show: true,
+              right: 20,
+              feature: {
+                saveAsImage: { title: '保存为图片', backgroundColor: '#0d1b2a' },
+                restore: { title: '重置' }
+              },
+              iconStyle: { borderColor: 'rgba(255, 255, 255, 0.75)' }
+            },
+            series: [{
+              type: 'treemap',
+              width: '90%',
+              height: '75%',
+              top: '15%',
+              left: 'center',
+              roam: false,
+              nodeClick: 'zoomToNode',
+              breadcrumb: { show: false },
+              label: {
+                show: true,
+                position: 'inside',
+                formatter: '{b}\n{c} 台',
+                color: '#fff',
+                fontSize: 16,
+                fontWeight: 'bold',
+                textShadowColor: '#000',
+                textShadowBlur: 4
+              },
+              levels: [{
+                itemStyle: { borderRadius: 8, gapWidth: 4 },
+                emphasis: {
+                  itemStyle: { shadowBlur: 20, shadowColor: 'rgba(24, 144, 255, 0.5)' },
+                  label: { fontSize: 18 }
+                }
+              }],
+              data: treemapData,
+              animationDuration: 1000,
+              animationEasing: 'quinticInOut'
+            }]
+          };
+        } else {
+          const sunburstData = [{
+            name: currentRegion,
+            value: regionData[currentRegion].pressure,
+            itemStyle: { color: colors[Object.keys(regionData).indexOf(currentRegion) % colors.length] },
+            children: Object.entries(regionData[currentRegion].provinces).map(([prov, val]) => ({
+              name: prov,
+              value: val,
+              itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [
+                  { offset: 0, color: echarts.color.modifyAlpha(colors[Object.keys(regionData).indexOf(currentRegion) % colors.length], 0.8) },
+                  { offset: 1, color: echarts.color.modifyAlpha(colors[Object.keys(regionData).indexOf(currentRegion) % colors.length], 0.4) }
+                ]),
+                borderColor: '#1a3566',
+                borderWidth: 2
+              }
+            }))
+          }];
+
+          option = {
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            title: {
+              text: `各地区压仓情况 (${currentRegion} - 省份)`,
+              left: 'center',
+              top: 10,
+              textStyle: { color: 'rgba(255, 255, 255, 0.9)', fontSize: 20, fontWeight: 'bold' }
+            },
+            tooltip: {
+              trigger: 'item',
+              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              borderWidth: 0,
+              padding: [10, 15],
+              textStyle: { color: '#fff', fontSize: 14 },
+              formatter: params => {
+                const path = params.treePathInfo.map(p => p.name).filter(n => n).join(' > ');
+                const percentage = ((params.value / regionData[currentRegion].pressure) * 100).toFixed(1);
+                return `<div style="line-height: 1.6;">
+                                        <strong>${path}</strong><br/>
+                                        压仓数量: <span style="font-weight: bold; color: ${colors[Object.keys(regionData).indexOf(currentRegion) % colors.length]}">${params.value} 台</span><br/>
+                                        占比: ${percentage}%
+                                    </div>`;
+              }
+            },
+            toolbox: {
+              show: true,
+              right: 20,
+              feature: {
+                saveAsImage: { title: '保存为图片', backgroundColor: '#0d1b2a' },
+                restore: { title: '返回大区视图', show: true }
+              },
+              iconStyle: { borderColor: 'rgba(255, 255, 255, 0.75)' }
+            },
+            series: [{
+              type: 'sunburst',
+              radius: ['20%', '80%'],
+              center: ['50%', '50%'],
+              sort: 'desc',
+              highlightPolicy: 'ancestor',
+              nodeClick: 'link',
+              label: {
+                show: true,
+                rotate: 'radial',
+                minAngle: 10,
+                color: '#fff',
+                fontSize: 14,
+                fontWeight: 'bold',
+                textShadowColor: '#000',
+                textShadowBlur: 4,
+                formatter: params => {
+                  const value = params.value > 1000 ? `${(params.value / 1000).toFixed(1)}k` : params.value;
+                  return `${params.name}\n${value}`;
+                }
+              },
+              itemStyle: { borderRadius: 8, shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.3)' },
+              emphasis: {
+                focus: 'ancestor',
+                itemStyle: { shadowBlur: 20, shadowColor: 'rgba(24, 144, 255, 0.5)' },
+                label: { fontSize: 16 }
+              },
+              levels: [
+                { itemStyle: { borderWidth: 2 }, label: { fontSize: 16 } },
+                { itemStyle: { borderWidth: 1 }, label: { fontSize: 12 } }
+              ],
+              data: sunburstData,
+              animationDuration: 1000,
+              animationEasing: 'quinticInOut'
+            }]
+          };
+        }
+
+        myChart.setOption(option, true);
+      };
+      updateChart();
+
+      myChart.on('click', params => {
+        if (!isProvinceView && params.data && regionData[params.data.name]) {
+          currentRegion = params.data.name;
+          isProvinceView = true;
+          toggleBtn.textContent = '返回大区视图';
+          updateChart();
+        }
+      });
+
+      toggleBtn.addEventListener('click', () => {
+        if (isProvinceView) {
+          isProvinceView = false;
+          currentRegion = null;
+          toggleBtn.textContent = '切换到省份视图';
+        } else {
+          isProvinceView = true;
+          if (!currentRegion) currentRegion = '华北'; // 默认显示华北
+          toggleBtn.textContent = '返回大区视图';
+        }
+        updateChart();
+      });
+
+      window.removeEventListener('resize', myChart.resize);
+      window.addEventListener('resize', () => myChart.resize());
+    }
+
+    // 各地区销售与计划
+    initProdRegionSalesChart(period) {
+      const chartDom = document.getElementById('prod-sales-region-chart');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom);
+      const toggleBtn = document.getElementById('toggle-prod-region-btn');
+
+      const regions = ['华北', '华东', '华南', '华中', '西南', '西北', '东北'];
+      const provinces = [
+        '北京', '天津', '河北', '山西', '内蒙古', // 华北
+        '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', // 华东
+        '广东', '广西', '海南', // 华南
+        '河南', '湖北', '湖南', // 华中
+        '重庆', '四川', '贵州', '云南', '西藏', // 西南
+        '陕西', '甘肃', '青海', '宁夏', '新疆', // 西北
+        '黑龙江', '吉林', '辽宁', // 东北
+        '香港', '澳门', '台湾' // 特别行政区及台湾
+      ];
+      let isProvinceView = false;
+      let selectedRegion = null;
+
+      // 生成数据的函数
+      const generateData = () => {
+        const dataLength = isProvinceView ? provinces.length : regions.length;
+        const dataPoints = period === 'monthly' ? 12 : period === 'quarterly' ? 4 : 5;
+        const xAxisData = period === 'monthly'
+                ? ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+                : period === 'quarterly'
+                        ? ['Q1', 'Q2', 'Q3', 'Q4']
+                        : ['2020', '2021', '2022', '2023', '2024'];
+
+        const prodData = Array(dataLength).fill(0).map(() =>
+                Array(dataPoints).fill(0).map(() => Math.floor(Math.random() * 1000 + 200))
+        );
+        const salesData = Array(dataLength).fill(0).map(() =>
+                Array(dataPoints).fill(0).map(() => Math.floor(Math.random() * 800 + 200))
+        );
+
+        const totalProd = prodData.map(row => row.reduce((sum, val) => sum + val, 0));
+        const totalSales = salesData.map(row => row.reduce((sum, val) => sum + val, 0));
+
+        return { xAxisData, totalProd, totalSales, prodData, salesData };
+      };
+
+      // 更新图表
+      const updateChart = () => {
+        const { xAxisData, totalProd, totalSales, prodData, salesData } = generateData();
+        const areaNames = isProvinceView ? provinces : regions;
+
+        const option = {
+          backgroundColor: 'rgba(12, 25, 40, 0.95)', // 深蓝色背景
+          title: {
+            text: selectedRegion ? `${selectedRegion} - 时间分布` : (isProvinceView ? '各省份生产与销售总量' : '各地区生产与销售总量'),
+            left: 'center',
+            top: 10,
+            textStyle: { color: '#cce4ff', fontSize: 18, fontWeight: '500' }
+          },
+          legend: {
+            data: [
+              { name: '生产', icon: 'rect', textStyle: { color: '#cce4ff' }, itemStyle: { color: '#40c4ff' } },
+              { name: '销售', icon: 'rect', textStyle: { color: '#cce4ff' }, itemStyle: { color: '#95de64' } }
+            ],
+            left: 10,
+            top: 10,
+            itemWidth: 14,
+            itemHeight: 14,
+            textStyle: { fontSize: 12 },
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: 4,
+            padding: [5, 10]
+          },
+          tooltip: {
+            trigger: 'item',
+            backgroundColor: 'rgba(20, 40, 60, 0.9)',
+            borderWidth: 0,
+            padding: [10, 15],
+            textStyle: { color: '#cce4ff', fontSize: 13 },
+            formatter: params => {
+              if (!selectedRegion) {
+                return `<div style="font-weight: 600; margin-bottom: 6px;">${params.name}</div>
+                                <div style="display: flex; justify-content: space-between; margin: 4px 0;">
+                                    <span>${params.seriesName}:</span>
+                                    <span style="font-weight: 600; color: ${params.color}">${params.value.toLocaleString()} 台</span>
+                                </div>
+                                <div style="font-size: 11px; color: #99b3cc;">点击查看时间分布</div>`;
+              } else {
+                return `<div style="font-weight: 600; margin-bottom: 6px;">${selectedRegion} - ${params.name}</div>
+                                <div style="display: flex; justify-content: space-between; margin: 4px 0;">
+                                    <span>${params.seriesName}:</span>
+                                    <span style="font-weight: 600; color: ${params.color}">${params.value.toLocaleString()} 台</span>
+                                </div>`;
+              }
+            },
+            extraCssText: 'border-radius: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);'
+          },
+          grid: {
+            left: '5%',
+            right: '5%',
+            top: selectedRegion ? '20%' : '25%',
+            bottom: '20%',
+            containLabel: true
+          },
+          xAxis: {
+            type: 'category',
+            data: selectedRegion ? xAxisData : areaNames,
+            axisLabel: {
+              color: '#99b3cc',
+              fontSize: 11,
+              rotate: isProvinceView && !selectedRegion ? 45 : (selectedRegion && period === 'monthly' ? 45 : 0),
+              margin: 12,
+              interval: 0 // 强制显示所有标签
+            },
+            axisLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.1)' } },
+            axisTick: { show: false }
+          },
+          yAxis: {
+            type: 'value',
+            axisLabel: { color: '#99b3cc', fontSize: 12, formatter: '{value} 台' },
+            splitLine: { lineStyle: { color: 'rgba(255, 255, 255, 0.05)', type: 'dotted' } },
+            axisLine: { show: false }
+          },
+          series: selectedRegion ? [
+            {
+              name: '生产',
+              type: 'bar',
+              data: prodData[areaNames.indexOf(selectedRegion)],
+              itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#40c4ff' },
+                  { offset: 1, color: '#1a8cff' }
+                ]),
+                borderRadius: [4, 4, 0, 0]
+              },
+              barWidth: 16,
+              label: { show: true, position: 'top', color: '#cce4ff', fontSize: 11 },
+              emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(64, 196, 255, 0.6)' } }
+            },
+            {
+              name: '销售',
+              type: 'bar',
+              data: salesData[areaNames.indexOf(selectedRegion)],
+              itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#95de64' },
+                  { offset: 1, color: '#52c41a' }
+                ]),
+                borderRadius: [4, 4, 0, 0]
+              },
+              barWidth: 16,
+              label: { show: true, position: 'top', color: '#cce4ff', fontSize: 11 },
+              emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(82, 196, 26, 0.6)' } }
+            }
+          ] : [
+            {
+              name: '生产',
+              type: 'bar',
+              stack: 'total',
+              data: totalProd,
+              itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#40c4ff' },
+                  { offset: 1, color: '#1a8cff' }
+                ]),
+                borderRadius: [4, 4, 0, 0]
+              },
+              barWidth: isProvinceView ? 12 : 20, // 省份视图柱子更窄
+              label: { show: true, position: 'insideTop', color: '#fff', fontSize: 11 },
+              emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(64, 196, 255, 0.6)' } }
+            },
+            {
+              name: '销售',
+              type: 'bar',
+              stack: 'total',
+              data: totalSales,
+              itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#95de64' },
+                  { offset: 1, color: '#52c41a' }
+                ]),
+                borderRadius: [0, 0, 0, 0]
+              },
+              barWidth: isProvinceView ? 12 : 20,
+              label: { show: true, position: 'insideBottom', color: '#fff', fontSize: 11 },
+              emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(82, 196, 26, 0.6)' } }
+            }
+          ],
+          toolbox: {
+            right: 15,
+            top: 5,
+            feature: {
+              saveAsImage: { title: '保存图片', backgroundColor: '#0c1928' },
+              restore: { title: '返回总览', show: !!selectedRegion },
+              dataZoom: { title: { zoom: '缩放', back: '还原' } }
+            },
+            iconStyle: { borderColor: '#99b3cc' },
+            emphasis: { iconStyle: { borderColor: '#40c4ff' } }
+          },
+          dataZoom: [
+            {
+              type: 'slider',
+              bottom: 5,
+              height: 20,
+              backgroundColor: 'rgba(255, 255, 255, 0.02)',
+              fillerColor: 'rgba(64, 196, 255, 0.2)',
+              borderColor: 'rgba(255, 255, 255, 0.05)',
+              handleStyle: { color: '#40c4ff', shadowBlur: 4 },
+              textStyle: { color: '#99b3cc', fontSize: 11 },
+              start: isProvinceView && !selectedRegion ? 0 : 0,
+              end: isProvinceView && !selectedRegion ? 50 : 100 // 省份视图默认显示一半数据
+            }
+          ],
+          animationDuration: 600,
+          animationEasing: 'cubicOut'
+        };
+
+        myChart.setOption(option, true);
+
+        // 点击柱子切换到时间分布视图
+        myChart.off('click');
+        myChart.on('click', params => {
+          if (!selectedRegion && params.componentType === 'series' && params.seriesType === 'bar') {
+            selectedRegion = areaNames[params.dataIndex];
+            updateChart();
+          }
+        });
+      };
+
+      // 初始化图表
+      updateChart();
+
+      // 时间周期切换
+      const tabs = document.querySelectorAll('.time-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          period = tab.dataset.period;
+          selectedRegion = null;
+          updateChart();
+        });
+      });
+
+      // 大区/省份视图切换
+      toggleBtn.addEventListener('click', () => {
+        isProvinceView = !isProvinceView;
+        toggleBtn.textContent = isProvinceView ? '切换到大区视图' : '切换到省份视图';
+        selectedRegion = null;
+        updateChart();
+      });
+
+      window.removeEventListener('resize', myChart.resize);
+      window.addEventListener('resize', () => myChart.resize());
+    }
+
+
+    // 各型号流转情况
+    initProdColorSalesChart(viewType) {
+      const chartDom = document.getElementById('prod-sales-color-chart');
+      if (!chartDom) return;
+
+      const myChart = echarts.init(chartDom);
+      const tabs = document.querySelectorAll('.time-tab');
+
+      const models = [
+        { name: '奥迪 A6', color: '#1890ff' },
+        { name: '奔驰 C级', color: '#40c4ff' },
+        { name: '宝马 3系', color: '#52c41a' },
+        { name: '法拉利 488', color: '#faad14' },
+        { name: '柯尼塞格 Jesko', color: '#f5222d' }
+      ];
+
+      const generateModelData = (type) => {
+        return models.map(model => {
+          let value, growth;
+          if (type === 'production') {
+            value = Math.floor(Math.random() * 1200 + 300);
+            growth = (Math.random() * 10 - 2).toFixed(1);
+          } else if (type === 'sales') {
+            value = Math.floor(Math.random() * 1000 + 200);
+            growth = (Math.random() * 8 - 3).toFixed(1);
+          } else {
+            value = Math.floor(Math.random() * 400 + 50);
+            growth = (Math.random() * 5 - 5).toFixed(1);
+          }
+          return { name: model.name, value, color: model.color, growth };
+        });
+      };
+
+      const updateChart = () => {
+        const data = generateModelData(viewType);
+
+        const option = {
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          tooltip: {
+            trigger: 'item',
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            borderWidth: 0,
+            padding: [12, 16],
+            textStyle: { color: '#fff', fontSize: 14 },
+            formatter: params => {
+              const { name, value, growth } = params.data;
+              const typeLabel = viewType === 'production' ? '生产量' : viewType === 'sales' ? '销售量' : '库存压力';
+              return `
+                                    <div style="line-height: 1.6;">
+                                        <strong>${name}</strong><br/>
+                                        ${params.marker} ${typeLabel}: <span style="font-weight: bold; font-size: 16px;">${value} 台</span><br/>
+                                        占比: ${params.percent}%<br/>
+                                        同比增长: <span style="color: ${growth >= 0 ? '#52c41a' : '#f5222d'}">${growth}%</span>
+                                    </div>`;
+            }
+          },
+          legend: {
+            orient: 'vertical',
+            left: 'left',
+            top: 'center',
+            textStyle: {
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontSize: 14,
+              fontWeight: 500,
+              padding: [0, 0, 0, 8]
+            },
+            itemWidth: 16,
+            itemHeight: 12,
+            itemGap: 12,
+            backgroundColor: 'rgba(255, 255, 255, 0.05)',
+            borderRadius: 6,
+            padding: 10,
+            formatter: name => {
+              const item = data.find(d => d.name === name);
+              return `${name} (${item.value} 台)`;
+            }
+          },
+          toolbox: {
+            right: 20,
+            feature: {
+              saveAsImage: { title: '保存为图片', backgroundColor: '#0d1b2a' },
+              dataView: { readOnly: true, title: '数据视图' },
+              restore: { title: '重置' }
+            },
+            iconStyle: { borderColor: 'rgba(255, 255, 255, 0.75)' }
+          },
+          series: [{
+            name: viewType === 'production' ? '生产量' : viewType === 'sales' ? '销售量' : '库存压力',
+            type: 'pie',
+            radius: ['35%', '65%'],
+            center: ['60%', '50%'],
+            roseType: 'radius',
+            itemStyle: {
+              borderRadius: 10,
+              borderColor: '#0d1b2a',
+              borderWidth: 2,
+              shadowBlur: 15,
+              shadowColor: 'rgba(0, 0, 0, 0.3)',
+              color: params => {
+                return new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: echarts.color.modifyAlpha(params.data.color, 1) },
+                  { offset: 1, color: echarts.color.modifyAlpha(params.data.color, 0.6) }
+                ]);
+              }
+            },
+            label: {
+              show: true,
+              position: 'outside',
+              formatter: params => {
+                const { name, value, percent } = params;
+                return `{name|${name}}\n{value|${value} 台} {percent|(${percent}%)}`;
+              },
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontSize: 14,
+              fontWeight: 'bold',
+              textShadowColor: '#000',
+              textShadowBlur: 2,
+              rich: {
+                name: { color: 'rgba(255, 255, 255, 0.9)', fontSize: 14, fontWeight: 'bold' },
+                value: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+                percent: { color: 'rgba(255, 255, 255, 0.7)', fontSize: 12 }
+              },
+              distance: 10,
+              minMargin: 8,
+              avoidLabelOverlap: true
+            },
+            labelLine: {
+              length: 15,
+              length2: 10,
+              smooth: 0.2,
+              lineStyle: { color: 'rgba(255, 255, 255, 0.5)', width: 1.5 }
+            },
+            emphasis: {
+              scale: true,
+              scaleSize: 10,
+              focus: 'self',
+              itemStyle: {
+                shadowBlur: 25,
+                shadowColor: 'rgba(24, 144, 255, 0.5)'
+              },
+              label: { fontSize: 16 }
+            },
+            data: data,
+            animationDuration: 1200,
+            animationEasing: 'elasticOut'
+          }]
+        };
+
+        myChart.setOption(option, true);
+      };
+
+      updateChart();
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          viewType = tab.dataset.period;
+          updateChart();
+        });
+      });
+
+      window.removeEventListener('resize', myChart.resize);
+      window.addEventListener('resize', () => myChart.resize());
+    }
+  }
+  // 在页面加载完成后实例化
+  document.addEventListener('DOMContentLoaded', () => {
+    new DashboardUI();
+  });
+</script>
+</body>
+</html>

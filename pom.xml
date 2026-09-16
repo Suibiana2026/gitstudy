@@ -1,0 +1,395 @@
+  <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.example</groupId>
+    <artifactId>Bigdata_1</artifactId>
+    <packaging>war</packaging>
+    <version>1.0-SNAPSHOT</version>
+    <name>Bigdata_1 Maven Webapp</name>
+    <url>http://maven.apache.org</url>
+
+    <parent>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-parent</artifactId>
+      <version>2.0.1.RELEASE</version>
+    </parent>
+
+
+    <properties>
+      <!-- 统一 Scala 版本 -->
+      <scala.version>2.12.17</scala.version>
+      <scala.binary.version>2.12</scala.binary.version>
+    </properties>
+
+
+
+    <dependencies>
+      <dependency>
+        <groupId>mysql</groupId>
+        <artifactId>mysql-connector-java</artifactId>
+        <version>5.1.49</version>
+      </dependency>
+
+
+<!--      <dependency>-->
+<!--        <groupId>mysql</groupId>-->
+<!--        <artifactId>mysql-connector-java</artifactId>-->
+<!--        <version>8.0.33</version>-->
+<!--      </dependency>-->
+
+
+
+<!--      <dependency>-->
+<!--        <groupId>junit</groupId>-->
+<!--        <artifactId>junit</artifactId>-->
+<!--        <version>4.13.2</version>-->
+<!--        <scope>compile</scope>-->
+<!--      </dependency>-->
+
+      <!-- CORS 支持 -->
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
+    </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>io.springfox</groupId>
+        <artifactId>springfox-swagger2</artifactId>
+        <version>2.9.2</version>
+      </dependency>
+      <dependency>
+        <groupId>io.springfox</groupId>
+        <artifactId>springfox-swagger-ui</artifactId>
+        <version>2.9.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-websocket</artifactId>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>1.18.34</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>jaxen</groupId>
+        <artifactId>jaxen</artifactId>
+        <version>2.0.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.dom4j</groupId>
+        <artifactId>dom4j</artifactId>
+        <version>2.1.4</version>
+      </dependency>
+
+      <!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-hdfs -->
+<!--      <dependency>-->
+<!--        <groupId>org.apache.hadoop</groupId>-->
+<!--        <artifactId>hadoop-hdfs</artifactId>-->
+<!--        <version>3.3.0</version>-->
+<!--        <scope>test</scope>-->
+<!--        <exclusions>-->
+<!--          <exclusion>-->
+<!--            <groupId>io.netty</groupId>-->
+<!--            <artifactId>netty</artifactId>-->
+<!--          </exclusion>-->
+<!--          <exclusion>-->
+<!--            <groupId>io.netty</groupId>-->
+<!--            <artifactId>netty-all</artifactId>-->
+<!--          </exclusion>-->
+<!--        </exclusions>-->
+<!--      </dependency>-->
+
+
+      <!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-hdfs-client -->
+<!--      <dependency>-->
+<!--        <groupId>org.apache.hadoop</groupId>-->
+<!--        <artifactId>hadoop-hdfs-client</artifactId>-->
+<!--        <version>3.3.0</version>-->
+<!--      </dependency>-->
+
+      <!-- https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-common -->
+<!--      <dependency>-->
+<!--        <groupId>org.apache.hadoop</groupId>-->
+<!--        <artifactId>hadoop-common</artifactId>-->
+<!--        <version>3.3.0</version>-->
+<!--        <exclusions>-->
+<!--          <exclusion>-->
+<!--            <groupId>io.netty</groupId>-->
+<!--            <artifactId>netty-transport-native-epoll</artifactId>-->
+<!--          </exclusion>-->
+<!--          <exclusion>-->
+<!--            <groupId>io.netty</groupId>-->
+<!--            <artifactId>netty-handler</artifactId>-->
+<!--          </exclusion>-->
+<!--        </exclusions>-->
+<!--      </dependency>-->
+
+<!--      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-core</artifactId>
+        <version>3.3.0</version>
+      </dependency>-->
+
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-hdfs</artifactId>
+        <version>3.4.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-pool2</artifactId>
+        <version>2.11.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-client-runtime</artifactId>
+        <version>3.4.1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hadoop</groupId>
+        <artifactId>hadoop-common</artifactId>
+        <version>3.4.1</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-reload4j</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>ch.qos.reload4j</groupId>
+            <artifactId>reload4j</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-shaded-guava</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mybatis.spring.boot</groupId>
+        <artifactId>mybatis-spring-boot-starter</artifactId>
+        <version>2.1.3</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+          </exclusion>
+        </exclusions>
+        </dependency>
+
+      <!-- HTTP Client -->
+      <dependency>
+        <groupId>org.apache.httpcomponents</groupId>
+        <artifactId>httpclient</artifactId>
+        <version>4.5.13</version>
+      </dependency>
+      <!-- File Monitoring -->
+      <dependency>
+        <groupId>commons-io</groupId>
+        <artifactId>commons-io</artifactId>
+        <version>2.11.0</version>
+      </dependency>
+
+      <!-- Spark Core -->
+      <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-core_2.12</artifactId>
+        <version>3.3.0</version>
+        <exclusions>
+          <!-- 排除 Spark 自带的 log4j 桥接，避免与 Spring Boot 的 log4j-to-slf4j 形成循环导致 StackOverflowError -->
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <!-- Spark SQL -->
+      <dependency>
+        <groupId>org.apache.spark</groupId>
+        <artifactId>spark-sql_2.12</artifactId>
+        <version>3.3.0</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <!-- PDF 处理 -->
+      <dependency>
+        <groupId>org.apache.pdfbox</groupId>
+        <artifactId>pdfbox</artifactId>
+        <version>2.0.27</version>
+      </dependency>
+      <dependency>
+        <groupId>com.itextpdf</groupId>
+        <artifactId>itext7-core</artifactId>
+        <version>9.1.0</version>
+        <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>com.itextpdf</groupId>
+        <artifactId>font-asian</artifactId>
+        <version>9.1.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.ben-manes.caffeine</groupId>
+        <artifactId>caffeine</artifactId>
+        <version>2.9.3</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>2.9.5</version>
+      </dependency>
+      <!-- Java WebSocket 客户端（用于客户端后端） -->
+      <dependency>
+        <groupId>org.java-websocket</groupId>
+        <artifactId>Java-WebSocket</artifactId>
+        <version>1.5.3</version>
+      </dependency>
+<!--      信息交互-->
+      <dependency>
+        <groupId>com.sun.mail</groupId>
+        <artifactId>javax.mail</artifactId>
+        <version>1.6.2</version>
+      </dependency>
+
+    </dependencies>
+
+
+    <dependencyManagement>
+      <dependencies>
+        <dependency>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-bom</artifactId>
+          <version>4.1.58.Final</version>
+          <type>pom</type>
+        </dependency>
+        <dependency>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-buffer</artifactId>
+          <version>4.1.58.Final</version>
+        </dependency>
+        <dependency>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-codec-http2</artifactId>
+          <version>4.1.58.Final</version>
+        </dependency>
+        <dependency>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-handler-proxy</artifactId>
+          <version>4.1.58.Final</version>
+        </dependency>
+        <!-- 强制所有模块使用 Scala 2.12 -->
+        <dependency>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-library</artifactId>
+          <version>${scala.version}</version>
+        </dependency>
+      </dependencies>
+    </dependencyManagement>
+
+
+    <build>
+      <finalName>Bigdata_1</finalName>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <source>8</source>
+            <target>8</target>
+          </configuration>
+        </plugin>
+      </plugins>
+    </build>
+  </project>

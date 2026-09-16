@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据管理系统 - 数据清洗</title>
+    <link rel="stylesheet" href="js/sources/bootstrap.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa, #e8ecef);
+            min-height: 100vh;
+        }
+        a {
+            text-decoration: none;
+            color: #1890ff;
+            transition: color 0.3s ease;
+        }
+        a:hover {
+            color: #40a9ff;
+        }
+        ul {
+            list-style: none;
+        }
+        header {
+            position: relative;
+            padding: 1.5rem 2rem;
+            color: #ffffff;
+            background: linear-gradient(135deg, #4686e1, #7b3fe4);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.15);
+        }
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        nav ul {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            user-select: none;
+        }
+        nav ul li {
+            margin-left: 0;
+            font-size: 20px;
+            position: relative;
+        }
+        nav ul li a {
+            color: #ffffff;
+            font-weight: 500;
+            transition: color 0.3s ease, transform 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        nav ul li a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background-color: #ffffff;
+            transition: width 0.3s ease;
+        }
+        nav ul li a:hover::after {
+            width: 100%;
+        }
+        nav ul li a:hover {
+            transform: translateY(-2px);
+        }
+        a.active {
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 20px;
+            position: static;
+            background-color: transparent;
+        }
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        section {
+            background: linear-gradient(135deg, #ffffff, #f9f9f9);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        section h2 {
+            color: #333;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #eee;
+            user-select: none;
+            position: relative;
+            font-size: 24px;
+        }
+        section h2::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background-color: #1890ff;
+            transition: width 0.3s ease;
+        }
+        section h2:hover::after {
+            width: 100%;
+        }
+        .file-list-container {
+            margin-top: 20px;
+        }
+        .file-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .file-item i {
+            margin-right: 10px;
+            color: #4686e1;
+        }
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100px;
+        }
+        .framework-buttons {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .framework-buttons .btn {
+            padding: 10px 25px;
+            font-size: 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .framework-buttons .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        .framework-buttons .btn i {
+            margin-right: 8px;
+        }
+        .framework-buttons .btn-disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .file-checkbox {
+            margin-right: 12px;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        .file-item:hover {
+            background-color: #f8f9fa;
+        }
+        .process-buttons {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+        .process-buttons .btn {
+            padding: 10px 25px;
+            font-size: 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .process-buttons .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        .process-buttons .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            opacity: 0.9;
+        }
+        .process-buttons .btn i {
+            margin-right: 8px;
+        }
+        /* 框架按钮高亮样式 */
+        .framework-buttons .btn.active {
+            background-color: #1a73e8;
+            color: white;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.3);
+        }
+
+        /* 功能按钮高亮样式 */
+        .process-buttons .btn.active {
+            background-color: #34a853;
+            color: white;
+            border-color: #34a853;
+            box-shadow: 0 0 0 3px rgba(52, 168, 83, 0.3);
+        }
+
+        /* 禁用按钮样式 */
+        .btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        /* 新增样式 */
+        .selection-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .selection-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .selection-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.25rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .selection-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .selection-buttons .btn {
+            min-width: 120px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .selection-buttons .btn.active::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.8rem;
+        }
+
+        .selection-buttons .btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .selection-buttons .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .selection-hint {
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <nav>
+        <ul>
+            <li><a href="IndexSystem.html?uroot=0" title="返回主页面"><i class="fas fa-arrow-left"></i>返回主页面</a></li>
+            <li><a href="DataAdministrationSystem.html?uroot=0"><i class="fas fa-home"></i>首页</a></li>
+            <li><a href="DataCollection.html?uroot=0"><i class="fas fa-stream"></i> 数据采集</a></li>
+            <li><a href="DataCleaning.html?uroot=0" class="active"><i class="fas fa-filter"></i> 数据处理 </a></li>
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <section>
+        <h2><i class="fas fa-file-alt"></i> 数据文件列表</h2>
+        <div class="file-list-container">
+            <div id="fileListContent">
+                <div class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <span class="ms-2">正在加载文件列表...</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="selection-container">
+        <div class="selection-group">
+            <h2><i class="fas fa-server"></i> 选择大数据处理框架</h2>
+            <div class="selection-buttons" id="frameworkButtons">
+                <button id="mapreduceBtn" class="btn btn-primary">MapReduce</button>
+                <button id="sparkBtn" class="btn btn-primary">Spark</button>
+                <button id="sparkBtn" class="btn btn-primary">Flink</button>
+                <button id="sparkBtn" class="btn btn-primary">kafka</button>
+                <button id="sparkBtns" class="btn btn-primary">其他生态系统</button>
+            </div>
+        </div>
+
+        <div class="selection-group">
+            <h2><i class="fas fa-cogs"></i> 选择数据处理功能</h2>
+            <div class="selection-buttons" id="processButtons">
+                <button id="wordCountBtn" class="btn btn-success" disabled>词频统计</button>
+                <button id="deduplicateBtn1" class="btn btn-success" disabled>去重</button>
+                <button id="deduplicateBtn" class="btn btn-success" disabled>数据清洗</button>
+                <button id="wordCountBtn" class="btn btn-success" disabled>流处理</button>
+
+                <button id="deduplicateBtns" class="btn btn-success" disabled>其他数据业务</button>
+                <button id="importDbBtn" class="btn btn-success" disabled>统计入库（大屏）</button>
+            </div>
+        </div>
+    </section>
+
+
+    <section id="fieldSelectionSection" style="display: none;">
+        <h2><i class="fas fa-list-ul"></i> 选择字段</h2>
+        <div id="fieldListContainer" class="file-list-container"></div>
+        <div class="process-buttons">
+            <button id="confirmFieldsBtn" class="btn btn-success">
+                <i class="fas fa-check"></i> 确认字段选择
+            </button>
+        </div>
+    </section>
+</main>
+
+<script src="js/sources/bootstrap.bundle.min.js"></script>
+<script>
+    // 在全局变量中添加
+    let selectedFields = [];
+    let currentOperation = ''; // 'wordcount' or 'deduplicate'
+
+    // 添加新函数获取文件字段
+    async function getFileFields(filePath) {
+        try {
+            const response = await fetch('/Spark/PreviewFields', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filePath })
+            });
+            if (!response.ok) throw new Error('获取字段失败');
+            return await response.json();
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    // 获取所有选中的文件
+    function getSelectedFiles() {
+        const checkboxes = document.querySelectorAll('.file-checkbox:checked');
+        return Array.from(checkboxes).map(checkbox => checkbox.dataset.filepath);
+    }
+
+    // 渲染文件列表到页面
+    function renderFileList(folders) {
+        const fileListContent = document.getElementById('fileListContent');
+
+        if (!folders || folders.length === 0 || !hasFiles(folders)) {
+            fileListContent.innerHTML = '<p>暂无文件</p>';
+            return;
+        }
+
+        let html = '';
+        folders.forEach(folder => {
+            if (folder.files && folder.files.length > 0) {
+                folder.files.forEach(file => {
+                    // 假设文件在 /original_data 目录下，添加完整路径
+                    const filePath = `${folder.path}/${file.name}.csv`; // 假设文件是 CSV 格式
+                    html += `
+                        <div class="file-item">
+                            <input type="checkbox" class="file-checkbox" data-filepath="${filePath}">
+                            <i class="fas fa-file"></i> ${file.name}
+                        </div>
+                    `;
+                });
+            }
+        });
+
+        fileListContent.innerHTML = html === '' ? '<p>暂无文件</p>' : html;
+    }
+
+    // 检查是否有文件
+    function hasFiles(folders) {
+        return folders.some(folder => folder.files && folder.files.length > 0);
+    }
+
+    // 显示加载指示器
+    function showLoadingIndicator() {
+        document.getElementById('loadingIndicator').style.display = 'flex';
+    }
+
+    // 隐藏加载指示器
+    function hideLoadingIndicator() {
+        document.getElementById('loadingIndicator').style.display = 'none';
+    }
+
+    // 调用后端词频统计API
+    async function performWordCount(filePaths, field) {
+        try {
+            showLoadingIndicator();
+
+            // 1. 执行词频统计处理
+            const response = await fetch('/Spark/WordFrequencyStatistics', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filePaths, field })
+            });
+
+            if (!response.ok) throw new Error('词频统计处理失败');
+            const result = await response.json();
+
+            // 2. 将结果转换为CSV格式
+            let csvContent = "字段,词,频率\n";
+            for (const [fieldName, wordFreq] of Object.entries(result.data)) {
+                for (const [word, freq] of Object.entries(wordFreq)) {
+                    csvContent += `${fieldName},${word},${freq}\n`;
+                }
+            }
+
+            // 3. 创建FormData并发送到后端保存
+            const formData = new FormData();
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            formData.append('file', blob, 'word_count_result.csv');
+            formData.append('operationType', '词频统计');
+            formData.append('field', field);
+
+            const saveResponse = await fetch('/HDFS/saveProcessedFile', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!saveResponse.ok) throw new Error('保存处理结果失败');
+            const saveResult = await saveResponse.json();
+
+            hideLoadingIndicator();
+            alert('处理完成并已保存到HDFS: ' + saveResult.filePath);
+            return result;
+        } catch (error) {
+            hideLoadingIndicator();
+            throw error;
+        }
+    }
+
+    // 调用后端去重API
+    async function performDeduplication(filePaths, field) {
+        try {
+            showLoadingIndicator();
+            const response = await fetch('/Spark/DuplicationEliminating', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({filePaths, dedupFields: field})
+            });
+
+            if (!response.ok) throw new Error('去重处理失败');
+            const result = await response.json();
+
+            // 这里应该从result中获取处理后的文件路径，而不是尝试创建Blob
+            // 因为后端已经将去重后的文件保存到HDFS
+            hideLoadingIndicator();
+            alert(result.message); // 显示后端返回的成功消息
+            return result;
+        } catch (error) {
+            hideLoadingIndicator();
+            throw error;
+        }
+    }
+
+    // 初始化页面
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取框架按钮容器和功能按钮容器
+        const frameworkButtons = document.getElementById('frameworkButtons');
+        const processButtons = document.getElementById('processButtons');
+
+        // 当前选中的框架和功能
+        let selectedFramework = '';
+        let selectedProcess = '';
+
+        // 框架按钮点击事件 - 只能选择一个
+        frameworkButtons.addEventListener('click', function(e) {
+            if (e.target.classList.contains('btn') && !e.target.classList.contains('active')) {
+                // 移除所有框架按钮的active类
+                Array.from(frameworkButtons.children).forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                // 给点击的按钮添加active类
+                e.target.classList.add('active');
+                selectedFramework = e.target.id.replace('Btn', '').toLowerCase();
+
+                // 启用所有功能按钮
+                Array.from(processButtons.children).forEach(btn => {
+                    btn.disabled = false;
+                });
+
+                // 清除之前选择的功能
+                selectedProcess = '';
+                Array.from(processButtons.children).forEach(btn => {
+                    btn.classList.remove('active');
+                });
+
+                // 获取选中的文件（与Spark按钮相同的逻辑）
+                selectedFiles = getSelectedFiles();
+            }
+        });
+
+        // 功能按钮点击事件 - 只能选择一个
+        processButtons.addEventListener('click', function(e) {
+            if (e.target.classList.contains('btn') && !e.target.disabled) {
+                // 如果已经选中，则取消选择
+                if (e.target.classList.contains('active')) {
+                    e.target.classList.remove('active');
+                    selectedProcess = '';
+                } else {
+                    // 移除所有功能按钮的active类
+                    Array.from(processButtons.children).forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+
+                    // 给点击的按钮添加active类
+                    e.target.classList.add('active');
+                    selectedProcess = e.target.id.replace('Btn', '').toLowerCase();
+                }
+            }
+        });
+
+        // 初始化状态 - 不默认选择任何框架
+        document.getElementById('wordCountBtn').disabled = true;
+        document.getElementById('deduplicateBtn').disabled = true;
+        // 获取文件列表
+        fetch('/HDFS/ListOriginalDataFiles2')
+            .then(response => {
+                if (!response.ok) throw new Error('网络响应不正常');
+                return response.json();
+            })
+            .then(data => {
+                renderFileList(data);
+            })
+            .catch(error => {
+                console.error('获取文件列表时出错:', error);
+                document.getElementById('fileListContent').innerHTML = '<p>暂无文件</p>';
+            });
+
+        // // Spark按钮点击事件
+        // document.getElementById('sparkBtn').addEventListener('click', function() {
+        //     selectedFiles = getSelectedFiles();
+        // });
+
+        // 词频统计按钮事件
+        document.getElementById('wordCountBtn').addEventListener('click', async function() {
+            if (!selectedFramework) {
+                alert('请先选择处理框架');
+                return;
+            }
+
+            const selectedFiles = getSelectedFiles();
+            if (selectedFiles.length === 0) {
+                alert('请先选择文件');
+                return;
+            }
+
+            currentOperation = 'wordcount';
+            showFieldSelection(selectedFiles[0]);
+        });
+
+        // 去重按钮事件
+        document.getElementById('deduplicateBtn').addEventListener('click', async function() {
+            if (!selectedFramework) {
+                alert('请先选择处理框架');
+                return;
+            }
+
+            const selectedFiles = getSelectedFiles();
+            if (selectedFiles.length === 0) {
+                alert('请先选择文件');
+                return;
+            }
+
+            currentOperation = 'deduplicate';
+            showFieldSelection(selectedFiles[0]);
+        });
+
+        // 统计入库按钮事件（把 HDFS 采集数据统计后写入 MySQL，供大屏展示）
+        document.getElementById('importDbBtn').addEventListener('click', function() {
+            const selectedFiles = getSelectedFiles();
+            if (selectedFiles.length === 0) {
+                alert('请先选择文件');
+                return;
+            }
+
+            currentOperation = 'importdb';
+            showFieldSelection(selectedFiles[0]);
+        });
+
+        // 添加显示字段选择函数
+        async function showFieldSelection(filePath) {
+            try {
+                showLoadingIndicator();
+                const fields = await getFileFields(filePath);
+                hideLoadingIndicator();
+
+                const fieldListContainer = document.getElementById('fieldListContainer');
+                let html = '';
+                fields.forEach(field => {
+                    html += `
+                <div class="file-item">
+                    <input type="checkbox" class="field-checkbox" data-field="${field}">
+                    <i class="fas fa-columns"></i> ${field}
+                </div>
+            `;
+                });
+                fieldListContainer.innerHTML = html;
+                document.getElementById('fieldSelectionSection').style.display = 'block';
+            } catch (error) {
+                hideLoadingIndicator();
+                alert('获取字段失败: ' + error.message);
+            }
+        }
+
+// 添加确认字段选择事件
+        // 修改确认字段选择事件处理函数
+        document.getElementById('confirmFieldsBtn').addEventListener('click', async function() {
+            const checkboxes = document.querySelectorAll('.field-checkbox:checked');
+            selectedFields = Array.from(checkboxes).map(checkbox => checkbox.dataset.field);
+
+            if (selectedFields.length === 0) {
+                alert('请至少选择一个字段');
+                return;
+            }
+
+            const selectedFiles = getSelectedFiles();
+            document.getElementById('fieldSelectionSection').style.display = 'none';
+
+            try {
+                if (currentOperation === 'wordcount') {
+                    // 直接调用Spark处理，不再在前端转换和保存
+                    const response = await fetch('/Spark/WordFrequencyStatistics', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            filePaths: selectedFiles,
+                            field: selectedFields.join(',')
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('词频统计处理失败');
+                    const result = await response.json();
+
+                    alert('处理完成: ' + result.message);
+
+                } else if (currentOperation === 'deduplicate') {
+                    // 去重处理保持不变
+                    const response = await fetch('/Spark/DuplicationEliminating', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            filePaths: selectedFiles,
+                            dedupFields: selectedFields.join(',')
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('去重处理失败');
+                    const result = await response.json();
+
+                    alert(result.message);
+                } else if (currentOperation === 'importdb') {
+                    // 统计入库：HDFS 采集数据 -> Spark 统计 -> 写入 MySQL（大屏展示）
+                    showLoadingIndicator();
+                    const response = await fetch('/Spark/ImportToDatabase', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            filePath: selectedFiles[0],
+                            field: selectedFields[0],
+                            topN: 10
+                        })
+                    });
+
+                    const result = await response.json();
+                    hideLoadingIndicator();
+
+                    if (result.status === 'success') {
+                        alert('入库成功！\n\n来源文件: ' + result.filePath
+                            + '\n统计字段: ' + result.field + (result.fallbackField ? '（原字段未匹配，已自动回退）' : '')
+                            + '\n数据行数: ' + result.sourceRows
+                            + '\n写入条数: ' + result.importCount
+                            + '\n\n请打开「数据大屏展示」页面查看最新统计结果');
+                    } else {
+                        alert(result.message || '入库失败');
+                    }
+                }
+            } catch (error) {
+                alert('处理失败: ' + error.message);
+            }
+        });
+    });
+    function getParameterByName(name, url = window.location.href) {
+        name = name.replace(/[\[\]]/g, '\\$&');
+        var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    }
+    var uroot = getParameterByName('uroot');
+
+    // // 非法登录校验
+    // if (uroot == null) {
+    //     alert("非法登录");
+    //     window.location.href = "login.html"
+    // }
+</script>
+<div id="loadingIndicator" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+    <div style="background:white; padding:20px; border-radius:5px;">
+        <div class="spinner-border text-primary" role="status"></div>
+        <span>处理中，请稍候...</span>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,95 @@
+package com.bigData.main.controller.WebSocket;
+
+import com.bigData.main.controller.WebSocket.DataCollectionHandler;
+import com.bigData.main.service.HDFS.UploadService;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/WebSocket")
+public class DataCollectionController {
+
+    private static final Logger logger = LoggerFactory.getLogger(DataCollectionController.class);
+
+    @Autowired
+    private DataCollectionHandler dataCollectionHandler;
+
+    @Autowired
+    private UploadService uploadService;
+
+
+    @PostMapping("/simulate")
+    public ResponseEntity<Map<String, Object>> simulateDataCollection(
+            @RequestBody Map<String, Object> params) {
+
+        try {
+            // 参数解析
+            String taskId = (String) params.get("taskId");
+            int duration = Integer.parseInt(params.get("duration").toString());
+
+            logger.info("开始模拟数据采集，任务ID: {}, 持续时间: {}秒", taskId, duration);
+
+            // 1. 生成CSV内容（每秒生成1条数据）
+            int dataCount = duration + 100; // 假设每秒生成1条数据
+            String csvContent = dataCollectionHandler.generateCsvContent(dataCount);
+
+            // 2. 生成文件名
+            String fileName = dataCollectionHandler.generateFileName(taskId);
+            Path hdfsPath = new Path("/original_data/" + fileName);
+
+            // 3. 保存到HDFS - 确保使用正确的HDFS服务
+            Configuration conf = new Configuration();
+            // 设置HDFS配置
+            conf.set("fs.defaultFS", "hdfs://zyh120:8020");
+            conf.set("dfs.replication", "1");
+
+            try (FileSystem fs = FileSystem.get(conf)) {
+                // 确保/original_data目录存在
+                if (!fs.exists(new Path("/original_data"))) {
+                    fs.mkdirs(new Path("/original_data"));
+                    logger.info("创建HDFS目录: /original_data");
+                }
+
+                // 写入文件到HDFS
+                try (OutputStream os = fs.create(hdfsPath)) {
+                    os.write(csvContent.getBytes());
+                    logger.info("文件成功写入HDFS: {}", hdfsPath);
+                }
+            }
+
+            // 4. 构建响应
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "success");
+            response.put("taskId", taskId);
+            response.put("fileName", fileName);
+            response.put("filePath", hdfsPath.toString());
+            response.put("fileSize", csvContent.getBytes().length);
+            response.put("dataCount", dataCount);
+
+            logger.info("数据采集完成，生成文件: {}, 数据量: {}条", fileName, dataCount);
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            logger.error("数据采集失败", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("status", "error");
+            errorResponse.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+}

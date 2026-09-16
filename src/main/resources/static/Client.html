@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>客户端 - 文件发送</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7fa;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        p {
+            color: #666;
+            margin: 10px 0;
+        }
+        #connectionStatus {
+            font-weight: bold;
+            color: #007bff;
+        }
+        input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px 0;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #connectSection, #tokenSection {
+            margin-top: 20px;
+        }
+        #tokenSection {
+            display: none;
+        }
+        #result {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>客户端文件发送</h1>
+    <p>连接状态: <span id="connectionStatus" th:text="${message}">未连接</span></p>
+
+    <div id="connectSection">
+        <input type="text" id="serverUrl" placeholder="输入服务端URL (默认: 10.5.0.66)" value="10.5.0.66" />
+        <button onclick="connectToServer()">连接</button>
+    </div>
+
+    <div id="tokenSection">
+        <button id="requestTokenButton" onclick="requestToken()" style="display: none;">请求获取发送令牌</button>
+        <input type="text" id="tokenInput" placeholder="输入令牌" oninput="validateToken()" />
+        <div id="fileSection" style="display: none;">
+            <input type="file" id="fileInput" accept=".txt" />
+            <button id="sendFileButton" onclick="sendFile()">发送文件</button>
+        </div>
+        <p id="result"></p>
+    </div>
+</div>
+
+<script>
+    let isConnected = false;
+
+    function connectToServer() {
+        const serverUrl = document.getElementById('serverUrl').value || '10.5.0.66';
+        document.getElementById('connectionStatus').innerText = '尝试连接';
+
+        // 模拟连接成功
+        setTimeout(() => {
+            document.getElementById('connectionStatus').innerText = '已连接';
+            document.getElementById('connectSection').style.display = 'none';
+            document.getElementById('tokenSection').style.display = 'block';
+            document.getElementById('requestTokenButton').style.display = 'block';
+            isConnected = true;
+            console.log(`[模拟] 连接到服务端 ${serverUrl} 成功`);
+        }, 1000); // 模拟 0.5 秒延迟
+    }
+
+    function requestToken() {
+        if (!isConnected) return;
+        const resultElement = document.getElementById('result');
+
+        // 模拟请求令牌
+        setTimeout(() => {
+            const simulatedToken = '111'; // 固定令牌为 '111'
+            resultElement.innerText = `数字令牌为 ${simulatedToken}`;
+            document.getElementById('tokenInput').value = simulatedToken;
+            validateToken(); // 自动验证令牌
+            console.log('[模拟] 请求令牌成功，返回令牌:', simulatedToken);
+        }, 10000); // 模拟 0.5 秒延迟
+    }
+
+    function validateToken() {
+        const tokenInput = document.getElementById('tokenInput').value;
+        const fileSection = document.getElementById('fileSection');
+        const resultElement = document.getElementById('result');
+
+        if (!tokenInput) {
+            fileSection.style.display = 'none';
+            return;
+        }
+
+        // 模拟令牌验证
+        setTimeout(() => {
+            const isValid = tokenInput === '111'; // 固定有效令牌为 '111'
+            if (isValid) {
+                fileSection.style.display = 'block';
+                resultElement.innerText = '令牌有效';
+                resultElement.classList.remove('error');
+                console.log('[模拟] 令牌验证成功:', tokenInput);
+            } else {
+                fileSection.style.display = 'none';
+                resultElement.innerText = '令牌无效';
+                resultElement.classList.add('error');
+                console.log('[模拟] 令牌验证失败:', tokenInput);
+            }
+        }, 10000); // 模拟 0.3 秒延迟
+    }
+
+    function sendFile() {
+        if (!isConnected) return;
+        const token = document.getElementById('tokenInput').value;
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+        const resultElement = document.getElementById('result');
+
+        if (token !== '111') {
+            resultElement.innerText = '令牌错误，请输入正确的令牌';
+            resultElement.classList.add('error');
+            console.log('[模拟] 令牌错误:', token);
+            return;
+        }
+
+        if (!file || !file.name.endsWith('.txt')) {
+            resultElement.innerText = '请选择一个 .txt 文件';
+            resultElement.classList.add('error');
+            console.log('[模拟] 文件格式错误');
+            return;
+        }
+
+        // 模拟文件发送
+        resultElement.innerText = '正在发送...';
+        setTimeout(() => {
+            resultElement.innerText = `文件 ${file.name} 发送成功`;
+            resultElement.classList.remove('error');
+            console.log('[模拟] 文件发送成功:', file.name);
+        }, 10000); // 模拟 1 秒延迟
+    }
+</script>
+</body>
+</html>

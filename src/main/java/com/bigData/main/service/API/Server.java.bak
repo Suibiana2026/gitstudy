@@ -1,0 +1,133 @@
+package com.bigData.main.service.API;
+
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.io.*;
+import java.net.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+@Component
+public class Server {
+
+    private static final byte[] END_OF_FILE = "END_OF_FILE".getBytes();
+    private Socket clientSocket; // 保存客户端连接
+
+    @Autowired
+    private FileSystem fileSystem;
+
+    public void startServer() {
+        try {
+            ServerSocket serverSocket = new ServerSocket(9999);
+            System.out.println("【服务端】监听端口 9999，等待客户端连接...");
+
+            // 接受客户端连接
+            clientSocket = serverSocket.accept();
+            System.out.println("【服务端】客户端连接成功！");
+        } catch (IOException e) {
+            System.err.println("【服务端】启动服务失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // 前端调用此方法获取文件
+    public String receiveFile() {
+        if (clientSocket == null || clientSocket.isClosed()) {
+            return "客户端未连接";
+        }
+
+        try {
+            InputStream inputStream = clientSocket.getInputStream();
+            PrintWriter outputWriter = new PrintWriter(clientSocket.getOutputStream(), true);
+            BufferedReader inputReader = new BufferedReader(new InputStreamReader(inputStream));
+
+            String originalFileName = inputReader.readLine();
+            if (originalFileName == null) {
+                return "未收到文件名";
+            }
+            System.out.println("【服务端】收到文件名: " + originalFileName);
+
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            String timestamp = sdf.format(new Date());
+            String localSavePath = "D:\\tmp\\" + timestamp + "_" + originalFileName;
+            System.out.println("【服务端】准备接收文件: " + localSavePath);
+
+            FileOutputStream fileOutputStream = new FileOutputStream(localSavePath);
+            byte[] buffer = new byte[1024];
+            int totalBytesReceived = 0;
+            byte[] endBuffer = new byte[END_OF_FILE.length];
+            int endBufferPos = 0;
+
+            System.out.println("【服务端】开始接收文件数据...");
+            while (true) {
+                int bytesRead = inputStream.read(buffer);
+                if (bytesRead == -1) break;
+
+                for (int i = 0; i < bytesRead; i++) {
+                    if (buffer[i] == END_OF_FILE[endBufferPos]) {
+                        endBuffer[endBufferPos] = buffer[i];
+                        endBufferPos++;
+                        if (endBufferPos == END_OF_FILE.length) {
+                            fileOutputStream.write(buffer, 0, i - END_OF_FILE.length + 1);
+                            totalBytesReceived += (i - END_OF_FILE.length + 1);
+                            System.out.println("【服务端】收到文件结束标记");
+                            break;
+                        }
+                    } else {
+                        if (endBufferPos > 0) {
+                            fileOutputStream.write(endBuffer, 0, endBufferPos);
+                            totalBytesReceived += endBufferPos;
+                            endBufferPos = 0;
+                        }
+                        fileOutputStream.write(buffer[i]);
+                        totalBytesReceived++;
+                    }
+                }
+                if (endBufferPos == END_OF_FILE.length) break;
+                if (endBufferPos == 0 && bytesRead < buffer.length) {
+                    fileOutputStream.write(buffer, 0, bytesRead);
+                    totalBytesReceived += bytesRead;
+                }
+            }
+
+            fileOutputStream.close();
+            System.out.println("【服务端】文件接收完成，大小: " + totalBytesReceived + " bytes");
+
+            outputWriter.println("文件接收成功，文件大小: " + totalBytesReceived + " bytes");
+            System.out.println("【服务端】已发送确认消息给客户端");
+
+            uploadFileToHDFS(localSavePath);
+
+            new File(localSavePath).delete();
+            System.out.println("【服务端】本地临时文件已删除");
+
+            return "文件接收成功: " + localSavePath;
+
+        } catch (IOException e) {
+            System.err.println("【服务端】接收文件失败: " + e.getMessage());
+            e.printStackTrace();
+            return "文件接收失败: " + e.getMessage();
+        }
+    }
+
+    private void uploadFileToHDFS(String localFilePath) {
+        try {
+            if (fileSystem == null) {
+                System.out.println("【服务端】错误: FileSystem 未初始化");
+                return;
+            }
+            Path localPath = new Path(localFilePath);
+            String fileName = localPath.getName();
+            Path hdfsPath = new Path("/original_data/" + fileName);
+            System.out.println("【服务端】开始上传文件到 HDFS: " + hdfsPath.toString());
+            fileSystem.copyFromLocalFile(localPath, hdfsPath);
+            System.out.println("【服务端】文件成功上传到 HDFS: " + hdfsPath.toString());
+        } catch (IOException e) {
+            System.err.println("【服务端】上传文件到 HDFS 时发生错误: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}

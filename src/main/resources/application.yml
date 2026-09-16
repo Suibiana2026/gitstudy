@@ -1,0 +1,88 @@
+#服务器相关配置
+server:
+  #服务器端口
+  port: 8080
+  tomcat:
+    max-http-post-size: 5000000
+
+spring:
+  web:
+    cors:
+      allowed-origins: "*"
+
+  #Spring Boot文件上传大小限制可任意修改
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+      enabled: true
+      file-size-threshold: 2KB
+  #配置数据源
+
+  datasource:
+    #数据库用户名
+    username: root
+    #数据库密码
+    password: 123456
+    # 本地 mysql 5.x版本
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3307/car_db?useSSL=false&characterEncoding=UTF-8
+    # Linux mysql 8.0.1版本
+#    url: jdbc:mysql://192.168.100.3:3306/car_db?useSSL=false&characterEncoding=UTF-8
+
+  #配置 JPA 和 Hibernate
+  jpa:
+    hibernate:
+      #验证实体类与数据库模式是否一致,如果不一致则抛出异常。
+      ddl-auto: update
+    #在日志中显示SQL 语句
+    show-sql: true
+    properties:
+      hibernate:
+        #Hibernate 使用mysql5.x数据库方言
+        dialect: org.hibernate.dialect.MySQL5Dialect
+
+#mydatis整合
+mybatis:
+  #classpath:Mapper/*.xml 表示 MyBatis 会扫描类路径（classpath）下的 Mapper 目录中所有以 .xml 结尾的文件，作为 Mapper 文件。
+  #Mapper 文件是 MyBatis 的核心部分，用于定义 SQL 语句和映射规则。每个 Mapper 文件通常对应一个数据库表或一组数据库操作。
+  mapper-locations: classpath:Mapper/*.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  type-aliases-package: com.bigData.main.pojo
+
+logging:
+  level:
+    com.bigData.main.controller.HDFS: INFO
+
+# Hadoop 相关配置
+hadoop:
+  fs:
+    # HDFS URL
+    defaultFS: hdfs://zyh120:8020
+  user:
+    # HDFS WEB 操作用户
+    name: root
+  hdfs:
+    original-data: /original_data
+    processed-data: /processed_data
+
+#AI大模型（阿里云百炼 DashScope · OpenAI 兼容模式）
+ai:
+  api:
+    url: https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+    # 优先读环境变量 DASHSCOPE_API_KEY；未设置时用下面的默认值
+    key: "${DASHSCOPE_API_KEY:sk-ws-H.PHEERXP.HkDG.MEQCICzDJ1LQewnoS2P7iBif9nT-w2kZzgNEDAWAwtgWxPxxAiAc9QjUPy9IyiIlK_UoWMvrZ_ZqnHdqzVF5lKqw6VSp-Q}"
+    # 主力模型：qwen3.8-flash —— 免费额度有效期最长、原生支持 tool calls、1M 上下文
+    # 想换更强的推理（答辩演示）可改成：qwen3.8-max-0902
+    # 想换更省/更快可改成：deepseek-v4-flash-0731
+    model: qwen3.8-flash
+  # 智能体行为参数
+  agent:
+    # 工具调用最大轮次，防止模型反复调用陷入死循环
+    max-tool-rounds: 5
+    # 单轮对话最长等待时间（毫秒）
+    timeout: 180000
+    # 允许被智能体上传到 HDFS 的本地目录（相对路径按项目根目录解析，超出此目录一律拒绝）
+    upload-root: uploads
+

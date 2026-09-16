@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>汽车销售大数据智能体</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+
+        body {
+            background-color: #ffffff;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 头部 */
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 18px 0;
+            border-bottom: 1px solid #f0f0f0;
+            margin-bottom: 16px;
+        }
+
+        .logo-badge {
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+            border-radius: 10px;
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: none;
+        }
+
+        .header-main { flex: 1; min-width: 0; }
+
+        .welcome {
+            font-size: 18px;
+            font-weight: 500;
+            color: #1a73e8;
+        }
+
+        .description {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .header-actions { display: flex; align-items: center; gap: 10px; flex: none; }
+
+        .plain-btn {
+            padding: 7px 14px;
+            background-color: #fff;
+            border: 1px solid #dadce0;
+            border-radius: 16px;
+            font-size: 13px;
+            color: #3c4043;
+            cursor: pointer;
+        }
+
+        .plain-btn:hover { background-color: #f1f3f4; }
+
+        .home-link {
+            font-size: 13px;
+            color: #1a73e8;
+            text-decoration: none;
+        }
+
+        /* 业务模块卡片 */
+        .modules {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 12px 14px;
+            background-color: #fafbfc;
+            border: 1px solid #f0f0f0;
+            border-radius: 12px;
+            margin-bottom: 14px;
+        }
+
+        .module-title {
+            font-size: 12px;
+            color: #9aa0a6;
+            margin-bottom: 8px;
+        }
+
+        .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .chip {
+            padding: 5px 12px;
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            border: 1px solid #d2e3fc;
+            border-radius: 14px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+        .chip:hover { background-color: #1a73e8; color: #fff; border-color: #1a73e8; }
+
+        /* 聊天区域 */
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 16px;
+            padding-right: 10px;
+        }
+
+        .message {
+            margin-bottom: 18px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            max-width: 82%;
+            font-size: 14px;
+        }
+
+        .bot-message {
+            background-color: #f8f9fa;
+            border-top-left-radius: 5px;
+        }
+
+        .user-message {
+            background-color: #e8f0fe;
+            color: #1a73e8;
+            margin-left: auto;
+            border-top-right-radius: 5px;
+        }
+
+        .tool-message {
+            background-color: #f2f7ff;
+            border: 1px dashed #c3daff;
+            color: #4a6da8;
+            font-size: 12.5px;
+            padding: 7px 12px;
+            border-radius: 14px;
+            max-width: 82%;
+            width: fit-content;
+            margin-bottom: 12px;
+        }
+
+        .error-message {
+            background-color: #fef1f0;
+            border: 1px solid #f7c9c4;
+            color: #b3261e;
+        }
+
+        .message-content {
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        .bot-message .message-time { text-align: left; }
+
+        /* 输入区 */
+        .input-container {
+            display: flex;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 20px;
+        }
+
+        .input-wrapper { display: flex; flex: 1; align-items: center; }
+
+        .input-box {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            font-size: 15px;
+            outline: none;
+            transition: all .3s;
+            font-family: inherit;
+        }
+
+        .input-box:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 2px rgba(26,115,232,.2);
+        }
+
+        .input-box::placeholder { color: #9aa0a6; }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            margin-left: 10px;
+            color: #5f6368;
+            transition: all .3s;
+            flex: none;
+        }
+
+        .icon-btn:hover { color: #1a73e8; }
+        .icon-btn:disabled { color: #c4c7cb; cursor: not-allowed; }
+
+        /* 等待动画 */
+        .typing { display: flex; padding: 2px 0; }
+        .typing i {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #b7bec7;
+            margin: 0 3px;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+        .typing i:nth-child(1) { animation-delay: 0s; }
+        .typing i:nth-child(2) { animation-delay: .2s; }
+        .typing i:nth-child(3) { animation-delay: .4s; }
+
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); opacity: .35; }
+            30% { transform: translateY(-5px); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 头部 -->
+    <div class="header">
+        <div class="logo-badge">AI</div>
+        <div class="header-main">
+            <div class="welcome">汽车销售大数据智能体</div>
+            <div class="description">
+                能查数据，也能直接执行 采集 / 清洗统计 / 上传 三类操作
+                <span id="sessionLabel"></span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="plain-btn" id="newSessionBtn">新会话</button>
+            <a class="home-link" id="homeLink">返回首页</a>
+        </div>
+    </div>
+
+    <!-- 业务模块卡片 -->
+    <div class="modules" id="modules"></div>
+
+    <!-- 聊天区域 -->
+    <div class="chat-container" id="chatContainer"></div>
+
+    <!-- 输入区域 -->
+    <div class="input-container">
+        <div class="input-wrapper">
+            <input type="text" class="input-box" id="messageInput"
+                   placeholder="问我业务问题，例如：2025 年 3 月哪款车卖得最好？">
+            <button class="icon-btn" id="sendBtn" title="发送">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ------------------------------------------------------------------
+    // 基础工具
+    // ------------------------------------------------------------------
+    function getParameterByName(name) {
+        var regex = new RegExp('[?&]' + name + '=([^&#]*)');
+        var results = regex.exec(window.location.href);
+        if (!results) return null;
+        if (!results[1]) return '';
+        return decodeURIComponent(results[1].replace(/\+/g, ' '));
+    }
+
+    function uuid() {
+        return 'sess-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    }
+
+    function formatTime(date) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    var uroot = getParameterByName('uroot');
+    var chatContainer = document.getElementById('chatContainer');
+    var messageInput = document.getElementById('messageInput');
+    var sendBtn = document.getElementById('sendBtn');
+    var sessionLabel = document.getElementById('sessionLabel');
+    var homeLink = document.getElementById('homeLink');
+
+    homeLink.href = uroot ? ('IndexSystem.html?uroot=' + encodeURIComponent(uroot)) : 'IndexSystem.html';
+
+    // 会话 ID：同一标签页刷新后复用，服务端会据此恢复上下文
+    var sessionId = sessionStorage.getItem('agentSessionId') || uuid();
+    sessionStorage.setItem('agentSessionId', sessionId);
+
+    var loading = false;
+
+    function refreshSessionLabel() {
+        sessionLabel.textContent = ' · 会话 ' + sessionId.slice(0, 12);
+    }
+    refreshSessionLabel();
+
+    // ------------------------------------------------------------------
+    // 业务模块卡片：按业务分组，点击即以自然语言发起提问
+    // ------------------------------------------------------------------
+    var MODULES = [
+        {
+            name: '实时采集（Socket）',
+            items: [
+                { label: '发起一次采集', ask: '帮我从 127.0.0.1:9999 采集 5 秒数据' },
+                { label: '采集服务状态', ask: '实时数据采集服务现在是什么状态？' }
+            ]
+        },
+        {
+            name: '数据清洗与统计（Spark / MapReduce）',
+            items: [
+                { label: '统计入库到大屏', ask: '把 HDFS 原始数据目录里最新的采集文件做分组统计，并写入大屏数据表' },
+                { label: '恢复大屏原始数据', ask: '把大屏数据恢复成备份里的原始数据' },
+                { label: '按字段去重', ask: '对原始数据按 model 字段做一次去重' },
+                { label: '词频统计', ask: '帮我跑一次词频统计作业，按 model 字段统计' }
+            ]
+        },
+        {
+            name: '文件上传（本地 -> HDFS）',
+            items: [
+                { label: '上传本地文件', ask: '把上传目录里的文件上传到 HDFS 原始数据目录' }
+            ]
+        },
+        {
+            name: '数据查询（MySQL）',
+            items: [
+                { label: '2025年3月销量排名', ask: '帮我查一下 2025 年 3 月各车型的销量排名和库存情况' },
+                { label: '全年销售总览', ask: '2025 年全年汽车销售情况怎么样？哪个车型卖得最好？' },
+                { label: '生成销售方案', ask: '基于 2025 年 3 月的销售数据，帮我生成一份销售方案' }
+            ]
+        },
+        {
+            name: '文件管理（HDFS）',
+            items: [
+                { label: '原始数据文件', ask: 'HDFS 原始数据目录里现在有哪些文件？一共多大？' },
+                { label: '处理结果文件', ask: '处理后的数据目录里有哪些文件？' }
+            ]
+        }
+    ];
+
+    (function renderModules() {
+        var box = document.getElementById('modules');
+        MODULES.forEach(function (group) {
+            var wrap = document.createElement('div');
+
+            var title = document.createElement('div');
+            title.className = 'module-title';
+            title.textContent = group.name;
+            wrap.appendChild(title);
+
+            var chips = document.createElement('div');
+            chips.className = 'chips';
+            group.items.forEach(function (item) {
+                var btn = document.createElement('button');
+                btn.className = 'chip';
+                btn.textContent = item.label;
+                btn.addEventListener('click', function () {
+                    if (loading) return;
+                    messageInput.value = item.ask;
+                    sendMessage();
+                });
+                chips.appendChild(btn);
+            });
+            wrap.appendChild(chips);
+
+            box.appendChild(wrap);
+        });
+    })();
+
+    // ------------------------------------------------------------------
+    // 消息渲染
+    // ------------------------------------------------------------------
+    function scrollToBottom() {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function addMessage(type, text, timeMillis) {
+        var row = document.createElement('div');
+        row.className = 'message ' + (
+            type === 'user' ? 'user-message' :
+            type === 'tool' ? 'tool-message' :
+            type === 'error' ? 'bot-message error-message' : 'bot-message'
+        );
+
+        var content = document.createElement('div');
+        content.className = 'message-content';
+        content.textContent = text || '';
+        row.appendChild(content);
+
+        if (type !== 'tool') {
+            var time = document.createElement('div');
+            time.className = 'message-time';
+            time.textContent = formatTime(timeMillis ? new Date(timeMillis) : new Date());
+            row.appendChild(time);
+        }
+
+        chatContainer.appendChild(row);
+        scrollToBottom();
+        return row;
+    }
+
+    function addToolHint(text, beforeRow) {
+        var row = document.createElement('div');
+        row.className = 'message tool-message';
+        var content = document.createElement('div');
+        content.className = 'message-content';
+        content.textContent = text;
+        row.appendChild(content);
+
+        if (beforeRow && beforeRow.parentNode === chatContainer) {
+            chatContainer.insertBefore(row, beforeRow);
+        } else {
+            chatContainer.appendChild(row);
+        }
+        scrollToBottom();
+    }
+
+    function createAiBubble() {
+        var row = addMessage('bot', '');
+        var content = row.querySelector('.message-content');
+
+        var typing = document.createElement('div');
+        typing.className = 'typing';
+        for (var i = 0; i < 3; i++) {
+            typing.appendChild(document.createElement('i'));
+        }
+        content.appendChild(typing);
+
+        return { row: row, content: content, typing: typing, text: '', started: false };
+    }
+
+    function appendDelta(bubble, text) {
+        if (!bubble.started) {
+            bubble.started = true;
+            if (bubble.typing.parentNode) {
+                bubble.typing.parentNode.removeChild(bubble.typing);
+            }
+            bubble.text = text;
+        } else {
+            bubble.text += text;
+        }
+        bubble.content.textContent = bubble.text;
+        scrollToBottom();
+    }
+
+    function markError(bubble, text) {
+        if (bubble.typing.parentNode) {
+            bubble.typing.parentNode.removeChild(bubble.typing);
+        }
+        bubble.row.className = 'message bot-message error-message';
+        bubble.text = bubble.text ? (bubble.text + '\n' + text) : text;
+        bubble.content.textContent = bubble.text;
+        scrollToBottom();
+    }
+
+    // ------------------------------------------------------------------
+    // 发送与流式接收
+    // ------------------------------------------------------------------
+    function setLoading(value) {
+        loading = value;
+        sendBtn.disabled = value;
+        var chips = document.querySelectorAll('.chip');
+        for (var i = 0; i < chips.length; i++) {
+            chips[i].disabled = value;
+        }
+    }
+
+    function handleFrame(block, bubble) {
+        var event = 'message';
+        var dataLines = [];
+        var lines = block.split('\n');
+
+        for (var i = 0; i < lines.length; i++) {
+            var raw = lines[i];
+            if (!raw || raw.charAt(0) === ':') continue;
+            var sep = raw.indexOf(':');
+            var field = sep === -1 ? raw : raw.slice(0, sep);
+            var value = sep === -1 ? '' : raw.slice(sep + 1);
+            if (value.charAt(0) === ' ') value = value.slice(1);
+
+            if (field === 'event') event = value;
+            else if (field === 'data') dataLines.push(value);
+        }
+
+        var payload = dataLines.join('\n');
+        if (!payload) return;
+
+        var text;
+        try {
+            text = JSON.parse(payload).v;
+        } catch (e) {
+            text = payload;
+        }
+
+        if (event === 'session') {
+            sessionId = text;
+            sessionStorage.setItem('agentSessionId', text);
+            refreshSessionLabel();
+        } else if (event === 'delta') {
+            appendDelta(bubble, text);
+        } else if (event === 'tool') {
+            addToolHint(text, bubble.row);
+        } else if (event === 'error') {
+            markError(bubble, text);
+        }
+    }
+
+    function sendMessage() {
+        var text = messageInput.value.trim();
+        if (!text || loading) return;
+
+        addMessage('user', text);
+        var bubble = createAiBubble();
+        messageInput.value = '';
+        setLoading(true);
+
+        fetch('/ai/bigdata/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: text, sessionId: sessionId })
+        }).then(function (resp) {
+            if (!resp.ok || !resp.body) {
+                throw new Error('服务返回 HTTP ' + resp.status);
+            }
+
+            var reader = resp.body.getReader();
+            var decoder = new TextDecoder('utf-8');
+            var buffer = '';
+
+            function pump() {
+                return reader.read().then(function (result) {
+                    if (result.done) {
+                        if (buffer.trim()) handleFrame(buffer, bubble);
+                        return;
+                    }
+                    buffer += decoder.decode(result.value, { stream: true });
+                    buffer = buffer.replace(/\r/g, '');
+
+                    var idx;
+                    while ((idx = buffer.indexOf('\n\n')) >= 0) {
+                        handleFrame(buffer.slice(0, idx), bubble);
+                        buffer = buffer.slice(idx + 2);
+                    }
+                    return pump();
+                });
+            }
+            return pump();
+        }).catch(function (err) {
+            markError(bubble, '请求失败：' + err.message);
+        }).then(function () {
+            if (bubble.typing.parentNode) {
+                bubble.typing.parentNode.removeChild(bubble.typing);
+            }
+            setLoading(false);
+            messageInput.focus();
+        });
+    }
+
+    // ------------------------------------------------------------------
+    // 交互绑定
+    // ------------------------------------------------------------------
+    sendBtn.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    document.getElementById('newSessionBtn').addEventListener('click', function () {
+        if (loading) return;
+        fetch('/ai/bigdata/reset?sessionId=' + encodeURIComponent(sessionId)).catch(function () {});
+        sessionId = uuid();
+        sessionStorage.setItem('agentSessionId', sessionId);
+        refreshSessionLabel();
+        chatContainer.innerHTML = '';
+        addMessage('bot', '已开启新会话，之前的上下文已清空。');
+    });
+
+    // 欢迎语 / 恢复历史对话
+    var WELCOME = '你好，我是汽车销售大数据智能体。\n'
+        + '我可以直接查数据库、看 HDFS 文件、提交离线计算作业，也能查实时采集服务的状态。\n'
+        + '上面的业务模块按钮可以直接点，也可以直接用自然语言问我。';
+
+    function restoreHistory() {
+        fetch('/ai/bigdata/history?sessionId=' + encodeURIComponent(sessionId))
+            .then(function (resp) { return resp.ok ? resp.json() : []; })
+            .then(function (list) {
+                if (Array.isArray(list) && list.length) {
+                    list.forEach(function (m) {
+                        addMessage(m.role === 'user' ? 'user' : 'bot', m.content, m.time);
+                    });
+                } else {
+                    addMessage('bot', WELCOME);
+                }
+            })
+            .catch(function () {
+                addMessage('bot', WELCOME);
+            });
+    }
+
+    restoreHistory();
+    messageInput.focus();
+</script>
+</body>
+</html>

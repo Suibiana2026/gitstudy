@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数智系统登录界面</title>
+    <script type="text/javascript" src="js/sources/jquery.js"></script>
+    <script src="js/sources/particles.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: #0a0e17;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            background: radial-gradient(circle at center, rgba(0, 255, 255, 0.15), rgba(10, 14, 23, 0.9) 70%);
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            width: 400px;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(20, 30, 48, 0.95), rgba(36, 59, 85, 0.9));
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            animation: neonPulse 4s infinite ease-in-out, fadeInContainer 0.8s ease-out;
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: scale(1.02);
+        }
+
+        @keyframes fadeInContainer {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes neonPulse {
+            0%, 100% { box-shadow: 0 0 40px rgba(0, 255, 255, 0.4), inset 0 0 10px rgba(0, 255, 255, 0.2); }
+            50% { box-shadow: 0 0 60px rgba(0, 255, 255, 0.6), inset 0 0 15px rgba(0, 255, 255, 0.3); }
+        }
+
+        h2 {
+            color: #00ffff;
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+            position: relative;
+        }
+
+        h2::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            width: 60px;
+            height: 2px;
+            background: #00ffff;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px #00ffff;
+            animation: flicker 1.5s infinite;
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 17px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 2;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.2), 0 0 8px rgba(0, 255, 255, 0.1);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #00ffff;
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(0, 255, 255, 0.05));
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5), inset 0 2px 6px rgba(0, 0, 0, 0.2);
+            transform: scale(1.02);
+        }
+
+        .form-input.valid {
+            border-color: #00ff00;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+
+        .form-input.invalid {
+            border-color: #ff4444;
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+        }
+
+        .form-input::placeholder {
+            color: rgba(0, 255, 255, 0.7);
+            font-weight: 400;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus::placeholder {
+            color: rgba(0, 255, 255, 0.3);
+            transform: translateX(5px);
+        }
+
+        .input-effect {
+            position: absolute;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.6), transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+        }
+
+        .input-glow {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.8), transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0;
+            animation: glowFade 0.8s ease-out;
+        }
+
+        @keyframes clickRipple {
+            0% { width: 0; height: 0; opacity: 0.8; }
+            50% { width: 100px; height: 100px; opacity: 0.4; background: radial-gradient(circle, rgba(0, 255, 255, 0.6), transparent 70%); }
+            100% { width: 200px; height: 200px; opacity: 0; background: radial-gradient(circle, rgba(255, 0, 255, 0.4), transparent 70%); }
+        }
+
+        @keyframes glowFade {
+            0% { width: 20px; height: 20px; opacity: 0.8; }
+            100% { width: 80px; height: 80px; opacity: 0; }
+        }
+
+        @keyframes inputBounce {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
+
+        .form-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(90deg, #00ffff, #00b4d8, #0077b6);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 30px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            margin-top: 15px;
+        }
+
+        .form-submit.loading {
+            background: linear-gradient(90deg, #00b4d8, #0077b6);
+            pointer-events: none;
+        }
+
+        .form-submit.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            border: 2px solid #ffffff;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .form-submit::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 150%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: all 0.6s ease;
+            z-index: 1;
+        }
+
+        .form-submit::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.5), transparent 70%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            opacity: 0;
+            z-index: 1;
+        }
+
+        .form-submit:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 35px rgba(0, 255, 255, 0.8), inset 0 0 10px rgba(0, 255, 255, 0.3);
+            background: linear-gradient(90deg, #00ffff, #00d4ff, #0099cc);
+        }
+
+        .form-submit:hover::before {
+            left: 150%;
+        }
+
+        .form-submit:active {
+            transform: scale(0.97);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .form-submit:active::after {
+            animation: ripple 0.8s ease-out;
+            opacity: 1;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #00ffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 3;
+        }
+
+        .password-toggle:hover {
+            text-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+            transform: translateY(-50%) scale(1.2);
+        }
+
+        .message-modal {
+            display: none;
+            position: fixed;
+            z-index: 4;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 320px;
+            padding: 30px;
+            background: linear-gradient(135deg, rgba(20, 30, 48, 0.95), rgba(36, 59, 85, 0.9));
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5), inset 0 0 8px rgba(0, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            text-align: center;
+            animation: fadeInModal 0.3s ease-out;
+        }
+
+        .message-modal.success {
+            border-color: #00ff00;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.5), inset 0 0 8px rgba(0, 255, 0, 0.2);
+        }
+
+        .message-modal.error {
+            border-color: #ff4444;
+            box-shadow: 0 0 30px rgba(255, 68, 68, 0.5), inset 0 0 8px rgba(255, 68, 68, 0.2);
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes fadeInModal {
+            from { opacity: 0; transform: translate(-50%, -60%) scale(0.95); }
+            to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translate(-50%, -50%) translateX(0); }
+            25% { transform: translate(-50%, -50%) translateX(-10px); }
+            75% { transform: translate(-50%, -50%) translateX(10px); }
+        }
+
+        .message-modal p {
+            color: #00ffff;
+            font-size: 18px;
+            margin: 0 0 20px 0;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .message-modal.success p {
+            color: #00ff00;
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        .message-modal.error p {
+            color: #ff4444;
+            text-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+        }
+
+        .message-modal button {
+            padding: 10px 20px;
+            background: linear-gradient(90deg, #00ffff, #00b4d8);
+            border: none;
+            border-radius: 25px;
+            color: #fff;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .message-modal button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+<div id="particles-js"></div>
+<div class="container login-container">
+    <h2>登录系统</h2>
+    <form action="/login" method="post">
+        <div class="input-group">
+            <input type="text" name="uname" id="userName" class="form-input" placeholder="用户名" required>
+            <span class="input-effect"></span>
+        </div>
+        <div class="input-group">
+            <input type="password" name="upass" id="passWord" class="form-input" placeholder="密码" required>
+            <span class="input-effect"></span>
+            <span class="password-toggle" onclick="togglePasswordVisibility()"><i class="fas fa-eye"></i></span>
+        </div>
+        <input type="button" class="form-submit" onclick="login()" value="登录">
+    </form>
+</div>
+
+<div id="messageModal" class="message-modal">
+    <p id="messageText"></p>
+    <button onclick="hideMessageModal()">确定</button>
+</div>
+
+<script>
+    particlesJS('particles-js', {
+        "particles": {
+            "number": { "value": 80, "density": { "enable": true, "value_area": 1000 } },
+            "color": { "value": ["#00ffff", "#00b4d8", "#ff00ff", "#9900ff"] },
+            "shape": { "type": ["polygon", "edge"], "polygon": { "nb_sides": 6 } },
+            "opacity": { "value": 0.7, "random": true, "anim": { "enable": true, "speed": 1, "opacity_min": 0.2, "sync": false } },
+            "size": { "value": 5, "random": true, "anim": { "enable": true, "speed": 2, "size_min": 1, "sync": false } },
+            "line_linked": { "enable": true, "distance": 150, "color": "#00ffff", "opacity": 0.4, "width": 1.5 },
+            "move": {
+                "enable": true,
+                "speed": 4,
+                "direction": "none",
+                "random": true,
+                "straight": false,
+                "out_mode": "bounce",
+                "attract": { "enable": false }
+            }
+        },
+        "interactivity": {
+            "detect_on": "canvas",
+            "events": {
+                "onhover": { "enable": true, "mode": "grab" },
+                "onclick": { "enable": true, "mode": "repulse" },
+                "resize": true
+            },
+            "modes": {
+                "grab": { "distance": 200, "line_linked": { "opacity": 0.8 } },
+                "repulse": { "distance": 150, "duration": 0.6 }
+            }
+        },
+        "retina_detect": true
+    });
+
+    function togglePasswordVisibility() {
+        var passwordInput = document.getElementById("passWord");
+        if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+        } else {
+            passwordInput.type = "password";
+        }
+    }
+
+    function showMessageModal(message, type) {
+        var modal = document.getElementById("messageModal");
+        var text = document.getElementById("messageText");
+        text.textContent = message;
+        modal.className = "message-modal " + type;
+        modal.style.display = "block";
+    }
+
+    function hideMessageModal() {
+        var modal = document.getElementById("messageModal");
+        modal.style.animation = "fadeOutModal 0.3s ease-in";
+        setTimeout(() => { modal.style.display = "none"; modal.style.animation = ""; }, 300);
+    }
+
+    function validateInputs() {
+        var name = $("#userName").val();
+        var pass = $("#passWord").val();
+        var nameReg = /^[a-zA-Z0-9_]{3,20}$/;
+
+        if (name) {
+            $("#userName").toggleClass("valid", nameReg.test(name));
+            $("#userName").toggleClass("invalid", !nameReg.test(name));
+        } else {
+            $("#userName").removeClass("valid invalid");
+        }
+
+        if (pass) {
+            $("#passWord").toggleClass("valid", pass.length >= 6);
+            $("#passWord").toggleClass("invalid", pass.length < 6);
+        } else {
+            $("#passWord").removeClass("valid invalid");
+        }
+    }
+
+    function login() {
+        var name = $("#userName").val();
+        var pass = $("#passWord").val();
+        var nameReg = /^[a-zA-Z0-9_]{3,20}$/;
+        var submitButton = $(".form-submit");
+
+        if (!nameReg.test(name)) {
+            showMessageModal("用户名格式不正确，请使用字母、数字、下划线，长度在3-20位", "error");
+            return;
+        }
+        if (pass.length < 6) {
+            showMessageModal("密码长度至少为6位", "error");
+            return;
+        }
+
+        submitButton.addClass("loading").val("登录中...");
+
+        $.ajax({
+            type: 'get',
+            async: true,
+            url: 'http://localhost:8080/Login', // 原登录接口
+            dataType: 'json',
+            data: { uname: name, upass: pass },
+            success: function (data) {
+                submitButton.removeClass("loading").val("登录");
+                if (data.re == 1) {
+                    // 调用新接口判断是否可以登录
+                    $.ajax({
+                        type: 'get',
+                        async: true,
+                        url: 'http://localhost:8080/statusser', // 假设这是你要调用的新接口
+                        dataType: 'json',
+                        data: { uname: name }, // 可以根据实际情况传递参数
+                        success: function (statusData) {
+                            if (statusData === 1) {
+                                showMessageModal("登录成功", "success");
+                                var root = data.uroot;
+                                setTimeout(function () {
+                                    window.location.href = "IndexSystem.html?uroot=" + root;
+                                }, 1000);
+                            } else if (statusData === 0) {
+                                showMessageModal("用户状态不允许登录", "error");
+                            } else {
+                                showMessageModal("获取用户状态失败", "error");
+                            }
+                        },
+                        error: function () {
+                            submitButton.removeClass("loading").val("登录");
+                            showMessageModal("获取用户状态接口请求失败，请检查网络", "error");
+                        }
+                    });
+                } else if (data.re == 2) {
+                    showMessageModal("用户名或密码错误", "error");
+                } else if (data.re == 3) {
+                    showMessageModal("用户不存在", "error");
+                }
+            },
+            error: function () {
+                submitButton.removeClass("loading").val("登录");
+                showMessageModal("登录请求失败，请检查网络", "error");
+            }
+        });
+    }
+
+    $(".form-input").on("click", function(e) {
+        var $input = $(this);
+        var offset = $input.offset();
+        var x = e.pageX - offset.left;
+        var y = e.pageY - offset.top;
+
+        var $ripple = $("<span class='input-effect'></span>").css({
+            left: x + "px",
+            top: y + "px"
+        });
+        $input.parent().append($ripple);
+        $ripple.one("animationend", function() { $(this).remove(); });
+        $ripple.css("animation", "clickRipple 0.8s ease-out");
+
+        var $glow = $("<span class='input-glow'></span>").css({
+            left: x + "px",
+            top: y + "px",
+            background: `radial-gradient(circle, rgba(${Math.random()*255}, ${Math.random()*255}, 255, 0.8), transparent 70%)`
+        });
+        $input.parent().append($glow);
+        $glow.one("animationend", function() { $(this).remove(); });
+
+        $input.css("animation", "inputBounce 0.3s ease");
+        $input.one("animationend", function() {
+            $(this).css("animation", "");
+        });
+
+        for (let i = 0; i < 5; i++) {
+            var $particle = $("<span class='input-effect'></span>").css({
+                left: x + "px",
+                top: y + "px",
+                width: "4px",
+                height: "4px",
+                background: `rgba(${Math.random()*255}, 255, 255, 0.8)`,
+                animation: `particleBurst ${0.5 + Math.random()*0.5}s ease-out`
+            });
+            $input.parent().append($particle);
+            $particle.one("animationend", function() { $(this).remove(); });
+        }
+    });
+
+    $("#userName, #passWord").on("input", validateInputs);
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            if (document.getElementById("messageModal").style.display === "block") {
+                hideMessageModal();
+            } else {
+                login();
+            }
+        }
+        if (event.key === 'Escape') {
+            hideMessageModal();
+        }
+    });
+
+    document.styleSheets[0].insertRule(`
+        @keyframes fadeOutModal {
+            from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            to { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+        }`, 0);
+
+    document.styleSheets[0].insertRule(`
+        @keyframes particleBurst {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(${(Math.random()-0.5)*100}px, ${(Math.random()-0.5)*100}px); opacity: 0; }
+        }`, 0);
+</script>
+</body>
+</html>

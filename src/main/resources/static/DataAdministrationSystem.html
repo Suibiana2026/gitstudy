@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据管理系统-首页</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* 全局样式 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa, #e8ecef);
+            min-height: 100vh;
+        }
+        a { text-decoration: none; color: #1890ff; transition: color 0.3s ease; }
+        a:hover { color: #40a9ff; }
+        ul { list-style: none; }
+
+        /* 通用变量 */
+        :root {
+            --border-radius: 10px;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.15);
+            --transition: all 0.3s ease;
+        }
+
+        /* 头部样式 */
+        header {
+            padding: 1.5rem 2rem;
+            background: linear-gradient(135deg, #4686e1, #7b3fe4);
+            color: #fff;
+            box-shadow: var(--shadow);
+        }
+        nav {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        nav ul {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        nav ul li a {
+            color: #fff;
+            font-weight: 500;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            transition: var(--transition);
+        }
+        nav ul li a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background: #fff;
+            transition: width 0.3s ease;
+        }
+        nav ul li a:hover::after { width: 100%; }
+        nav ul li a:hover { transform: translateY(-2px); }
+        a.active { font-weight: bold; }
+
+        /* 主要内容区域 */
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        section {
+            background: linear-gradient(135deg, #fff, #f9f9f9);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            transition: var(--transition);
+        }
+        section:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); }
+        section h2 {
+            color: #333;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #eee;
+            font-size: 24px;
+            position: relative;
+        }
+        section h2::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 0;
+            background: #1890ff;
+            transition: width 0.3s ease;
+        }
+        section h2:hover::after { width: 100%; }
+
+        /* 数据概览卡片 */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 2rem;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #f9f9f9, #e8ecef);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.5s ease;
+            transform: skewX(-20deg);
+        }
+        .stat-card:hover::before { left: 100%; }
+        .stat-card h3 { font-size: 1.1rem; color: #666; margin-bottom: 0.75rem; }
+        .stat-number { font-size: 2.5rem; font-weight: bold; color: #1890ff; }
+
+        /* 数据表格 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        th, td { padding: 1.25rem; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: linear-gradient(135deg, #fafafa, #f5f7fa); font-weight: 600; }
+        tbody tr:nth-child(odd) { background: #f9f9f9; }
+        tbody tr:nth-child(even) { background: #fff; }
+        tbody tr:hover { background: linear-gradient(135deg, #f5f7fa, #e8ecef); }
+        th.sortable { cursor: pointer; position: relative; padding-right: 20px; }
+        th.sortable::after {
+            content: '';
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+        }
+        th.sortable.asc::after { border-bottom: 5px solid #1890ff; }
+        th.sortable.desc::after { border-top: 5px solid #1890ff; }
+
+        /* 按钮通用样式 */
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        button:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+        button:active { transform: translateY(1px); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); }
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.5s ease;
+            transform: skewX(-20deg);
+        }
+        button:hover::before { left: 100%; }
+        button:disabled {
+            background: linear-gradient(135deg, #a0a0a0, #808080);
+            color: #d0d0d0;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+        .preview-btn { background: linear-gradient(135deg, #4686e1, #7b3fe4); color: #fff; }
+        .preview-btn:hover { background: linear-gradient(135deg, #7b3fe4, #4686e1); }
+        .download-btn, #downloadBtn {
+            background: linear-gradient(135deg, #34c759, #21a54c);
+            color: #fff;
+        }
+        .download-btn:hover, #downloadBtn:hover { background: linear-gradient(135deg, #21a54c, #34c759); }
+        .delete-btn { background: linear-gradient(135deg, #ff3b30, #d81b60); color: #fff; }
+        .delete-btn:hover { background: linear-gradient(135deg, #d81b60, #ff3b30); }
+        .generate-btn {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .generate-btn:hover { background: linear-gradient(135deg, #f57c00, #ff9800); }
+        #downloadBtn { padding: 8px 16px; }
+
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #fff, #f9f9f9);
+            margin: 10% auto;
+            padding: 2rem;
+            border-radius: 12px;
+            width: 70%;
+            max-width: 900px;
+            max-height: 80vh;
+            overflow: auto;
+            box-shadow: var(--shadow-hover);
+            animation: modalFadeIn 0.3s ease;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            color: #aaa;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .close:hover { color: #ff3b30; transform: rotate(90deg); }
+        .preview-content { margin-top: 2rem; text-align: center; white-space: pre-wrap; }
+        .preview-content img, .preview-content iframe, .preview-content audio, .preview-content video {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+        .preview-content iframe, .preview-content video { height: 60vh; }
+        .preview-content audio { max-width: 600px; display: block; margin: 0 auto; }
+
+    </style>
+</head>
+<body>
+<header>
+    <nav>
+        <ul>
+            <!-- 返回按钮 -->
+            <li><a href="IndexSystem.html?uroot=0" title="返回主页面"><i class="fas fa-arrow-left"></i>返回主页面</a></li>
+            <li><a href="DataAdministrationSystem.html?uroot=0" class="active"><i class="fas fa-home"></i> 首页</a></li>
+            <li><a href="DataCollection.html?uroot=0"><i class="fas fa-stream"></i> 各类数据采集</a></li>
+            <li><a href="DataCleaning.html?uroot=0"><i class="fas fa-filter"></i> 数据处理</a></li>
+            <li><a href="DataCleaning.html?uroot=0"><i class="fas fa-filter"></i> 批处理</a></li>
+            <li><a href="DataCleaning.html?uroot=0"><i class="fas fa-filter"></i> 流处理</a></li>
+            <li><a href="DataCleaning.html?uroot=0"><i class="fas fa-filter"></i> 图处理</a></li>
+
+        </ul>
+    </nav>
+</header>
+
+<main>
+    <section class="dashboard">
+        <h2>数据概览</h2>
+        <div class="stats-container">
+            <div class="stat-card"><h3>文件数量</h3><p class="stat-number" id="totalFiles">0</p></div>
+            <div class="stat-card"><h3>今日新增文件</h3><p class="stat-number" id="todayFiles">0</p></div>
+            <div class="stat-card"><h3>待查看文件</h3><p class="stat-number" id="pendingFiles">0</p></div>
+        </div>
+    </section>
+
+    <section class="data-list">
+        <div class="header-section">
+            <h2>文件列表</h2>
+<!--            <div class="upload-section">-->
+<!--                <button id="downloadBtn">一键下载</button>-->
+<!--            </div>-->
+        </div>
+        <table id="dataTable">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th class="sortable" data-sort="name">文件名称</th>
+                <th>文件类型</th>
+                <th class="sortable" data-sort="size">文件大小</th>
+                <th class="sortable" data-sort="modifyTime">上传日期</th>
+                <th>文件操作</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+
+</main>
+
+<div id="previewModal" class="modal">
+    <div class="modal-content">
+        <span class="close">×</span>
+        <div id="previewContent" class="preview-content"></div>
+    </div>
+</div>
+
+<script>
+    function getParameterByName(name, url = window.location.href) {
+        name = name.replace(/[\[\]]/g, '\\$&');
+        var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    }
+    var uroot = getParameterByName('uroot');
+
+    // // 非法登录校验
+    // if (uroot == null) {
+    //     alert("非法登录");
+    //     window.location.href = "login.html"
+    // }
+    const viewedFiles = new Set(localStorage.getItem('viewedFiles') ? JSON.parse(localStorage.getItem('viewedFiles')) : []);
+    let sortField = 'name', sortDirection = 1;
+
+    // 初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        setupEventListeners();
+        fetchData();
+    });
+
+    // 事件监听
+    function setupEventListeners() {
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const newSortField = th.getAttribute('data-sort');
+                sortField = sortField === newSortField ? sortField : newSortField;
+                sortDirection = sortField === newSortField ? sortDirection * -1 : 1;
+                updateSortIndicators();
+                fetchData();
+            });
+        });
+        // document.getElementById('downloadBtn').addEventListener('click', handleDownloadAll);
+        document.addEventListener('click', e => {
+            if (e.target.classList.contains('preview-btn')) previewFile(e.target.getAttribute('data-filename'));
+        });
+        document.querySelector('.close').addEventListener('click', closeModal);
+    }
+
+    // 更新排序指示器
+    function updateSortIndicators() {
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.classList.remove('asc', 'desc');
+            if (th.getAttribute('data-sort') === sortField) th.classList.add(sortDirection === 1 ? 'asc' : 'desc');
+        });
+    }
+
+    // 数据获取与更新
+    async function fetchData() {
+        try {
+            const response = await fetch('/HDFS/ListProcessedDataFiles');
+            const data = await response.json();
+            if (Array.isArray(data) && data[0]?.files) {
+                const sortedFiles = sortFiles(data[0].files);
+                updateTable(sortedFiles);
+                updateStats(sortedFiles);
+            } else throw new Error('数据格式不正确');
+        } catch (error) {
+            console.error('请求数据失败:', error);
+            updateStats([]);
+        }
+    }
+
+    function sortFiles(files) {
+        return [...files].sort((a, b) => {
+            let valA = a[sortField], valB = b[sortField];
+            if (sortField === 'modifyTime') [valA, valB] = [new Date(valA).getTime(), new Date(valB).getTime()];
+            else if (sortField === 'size') [valA, valB] = [Number(valA), Number(valB)];
+            return valA < valB ? -sortDirection : valA > valB ? sortDirection : 0;
+        });
+    }
+
+    function updateTable(files) {
+        const tbody = document.querySelector('#dataTable tbody');
+        tbody.innerHTML = files.map((file, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${file.name}</td>
+                    <td>${file.type}</td>
+                    <td>${file.size} B</td>
+                    <td>${new Date(file.modifyTime).toLocaleDateString()}</td>
+                    <td>
+                        <button class="preview-btn" data-filename="${file.name}">预览</button>
+                        <button class="download-btn" onclick="downloadFile('${file.name}')">下载</button>
+
+                    </td>
+                </tr>
+            `).join('');
+    }
+
+    function updateStats(files) {
+        const today = new Date().setHours(0, 0, 0, 0);
+        document.getElementById('totalFiles').textContent = files.length;
+        document.getElementById('todayFiles').textContent = files.filter(f => {
+            const time = new Date(f.modifyTime).getTime();
+            return time >= today && time < today + 86400000;
+        }).length;
+        document.getElementById('pendingFiles').textContent = files.filter(f => !viewedFiles.has(f.name)).length;
+    }
+
+    // 文件操作
+    async function previewFile(filename) {
+        const modal = document.getElementById('previewModal');
+        const content = document.getElementById('previewContent');
+        modal.style.display = 'block';
+        content.innerHTML = '<p>加载中...</p>';
+        try {
+            const response = await fetch(`/HDFS/previewProcessedData/${encodeURIComponent(filename)}`);
+            if (!response.ok) throw new Error(await response.text());
+            viewedFiles.add(filename);
+            localStorage.setItem('viewedFiles', JSON.stringify([...viewedFiles]));
+            fetchData();
+            const contentType = response.headers.get('content-type');
+            const ext = filename.split('.').pop().toLowerCase();
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            if (contentType.includes('text') || ['txt', 'csv'].includes(ext)) {
+                content.textContent = await blob.text();
+            } else if (contentType.includes('image') || ['jpg', 'png', 'gif'].includes(ext)) {
+                content.innerHTML = `<img src="${url}" alt="预览图片">`;
+            } else if (contentType.includes('application/pdf') || ext === 'pdf') {
+                content.innerHTML = `<iframe src="${url}"></iframe>`;
+            } else if (contentType.includes('audio') || ext === 'mp3') {
+                content.innerHTML = `<audio controls><source src="${url}" type="audio/mpeg"></audio>`;
+            } else if (contentType.includes('video') || ext === 'mp4') {
+                content.innerHTML = `<video controls><source src="${url}" type="video/mp4"></video>`;
+            } else {
+                content.innerHTML = '<p>不支持的文件格式</p>';
+            }
+        } catch (error) {
+            content.innerHTML = `<div style="color: red">加载失败: ${error.message}</div>`;
+        }
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('previewModal');
+        const content = document.getElementById('previewContent');
+        modal.style.display = 'none';
+        content.querySelectorAll('img, iframe, audio, video').forEach(el => {
+            if (el.src.startsWith('blob:')) URL.revokeObjectURL(el.src);
+        });
+        content.innerHTML = '';
+    }
+
+    function downloadFile(fileName) {
+        const a = document.createElement('a');
+        a.href = `/HDFS/download/processed_data/${fileName}`;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // async function deleteFile(fileName) {
+    //     if (!confirm('确定删除此文件吗？')) return;
+    //     try {
+    //         const response = await fetch(`/HDFS/deleteProcessedData/${encodeURIComponent(fileName)}`, { method: 'DELETE' });
+    //         if (response.ok) {
+    //             viewedFiles.delete(fileName);
+    //             localStorage.setItem('viewedFiles', JSON.stringify([...viewedFiles]));
+    //             fetchData();
+    //             alert('文件删除成功');
+    //         } else throw new Error('删除失败');
+    //     } catch (error) {
+    //         alert(`删除失败: ${error.message}`);
+    //     }
+    // }
+
+    // async function handleDownloadAll() {
+    //     const btn = document.getElementById('downloadBtn');
+    //     try {
+    //         btn.disabled = true;
+    //         btn.textContent = '下载中...';
+    //         const response = await fetch('/HDFS/downloadAll?folderPath=/processed_data', {
+    //             headers: { 'Accept': 'application/zip' }
+    //         });
+    //         if (!response.ok) throw new Error(`状态码: ${response.status}`);
+    //         const fileName = response.headers.get('Content-Disposition')?.match(/filename="(.+)"/)?.[1] || 'downloaded_files.zip';
+    //         const blob = await response.blob();
+    //         const url = URL.createObjectURL(blob);
+    //         const a = document.createElement('a');
+    //         a.href = url;
+    //         a.download = fileName;
+    //         document.body.appendChild(a);
+    //         a.click();
+    //         document.body.removeChild(a);
+    //         URL.revokeObjectURL(url);
+    //         alert('下载成功');
+    //     } catch (error) {
+    //         alert(`下载失败: ${error.message}`);
+    //     } finally {
+    //         btn.disabled = false;
+    //         btn.textContent = '一键下载';
+    //     }
+    // }
+</script>
+</body>
+</html>

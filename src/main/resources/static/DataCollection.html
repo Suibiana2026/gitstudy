@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据采集 - 数据管理系统</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<!--    JSON 的语法高亮-->
+    <link rel="stylesheet" href="js/sources/default.min.css">
+</head>
+
+<style>
+    /* 全局变量 */
+    :root {
+        --primary-color: #1890ff; /* 主色 */
+        --danger-color: #ff3b30; /* 危险色 */
+        --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.1); /* 轻阴影 */
+        --shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.15); /* 悬停阴影 */
+        --border-radius: 10px; /* 统一圆角 */
+        --gradient-bg: linear-gradient(135deg, #ffffff, #f9f9f9); /* 通用渐变背景 */
+        --transition: all 0.3s ease; /* 通用过渡 */
+    }
+
+    /* 全局样式 */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Microsoft YaHei', Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: linear-gradient(135deg, #f5f7fa, #e8ecef);
+        min-height: 100vh;
+    }
+
+    a {
+        text-decoration: none;
+        color: var(--primary-color);
+        transition: var(--transition);
+    }
+
+    a:hover {
+        color: #40a9ff;
+    }
+
+    ul {
+        list-style: none;
+    }
+
+    /* 头部样式 */
+    header {
+        padding: 1.5rem 2rem;
+        color: #fff;
+        background: linear-gradient(135deg, #4686e1, #7b3fe4);
+        box-shadow: var(--shadow-light);
+    }
+
+    nav ul {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    nav ul {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    nav ul li {
+        font-size: 20px;
+        position: relative;
+    }
+
+    nav ul li a {
+        color: #fff;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px; /* 图标和文字间距 */
+        transition: var(--transition);
+    }
+
+    nav ul li:first-child a {
+        padding: 5px; /* 为返回图标添加轻微内边距 */
+    }
+
+    /* 仅图标的返回按钮调整 */
+    nav ul li:first-child a i {
+        font-size: 20px; /* 确保图标大小合适 */
+    }
+
+    nav ul li a::after {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 2px;
+        bottom: -5px;
+        left: 0;
+        background-color: #fff;
+        transition: width 0.3s ease;
+    }
+
+    nav ul li a:hover::after {
+        width: 100%;
+    }
+
+    nav ul li a:hover {
+        color: #e6f0ff; /* 悬停时略亮白色 */
+    }
+
+    a.active {
+        color: #fff;
+        font-weight: bold;
+        font-size: 20px;
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        nav ul {
+            gap: 1rem;
+            justify-content: center;
+        }
+        nav ul li, a.active {
+            font-size: 16px;
+        }
+        nav ul li:first-child a i {
+            font-size: 16px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        nav ul {
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        nav ul li, a.active {
+            font-size: 14px;
+        }
+        nav ul li:first-child a i {
+            font-size: 14px;
+        }
+    }
+
+    /* 主要内容区域 */
+    main {
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 2rem;
+    }
+
+    section, .data-collection {
+        background: var(--gradient-bg);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        padding: 2rem;
+        margin-bottom: 2.5rem;
+        transition: var(--transition);
+    }
+
+    section:hover, .data-collection:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    section h2, .modal-content h2 {
+        color: #333;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #eee;
+        font-size: 24px;
+        position: relative;
+    }
+
+    section h2::after, .modal-content h2::after {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 2px;
+        bottom: -2px;
+        left: 0;
+        background-color: var(--primary-color);
+        transition: width 0.3s ease;
+    }
+
+    section h2:hover::after, .modal-content h2:hover::after {
+        width: 100%;
+    }
+
+    /* 数据表格 */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-light);
+    }
+
+    table th, table td {
+        padding: 1.25rem;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+
+    table th {
+        background: linear-gradient(135deg, #fafafa, #f5f7fa);
+        font-weight: 600;
+    }
+
+    table tbody tr:nth-child(odd) {
+        background-color: #f9f9f9;
+    }
+
+    table tbody tr:nth-child(even) {
+        background-color: #fff;
+    }
+
+    table tbody tr:hover {
+        background: linear-gradient(135deg, #f5f7fa, #e8ecef);
+    }
+
+    /* 模态框 */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+        background: var(--gradient-bg);
+        margin: 10% auto;
+        padding: 2rem;
+        border-radius: var(--border-radius);
+        width: 70%;
+        max-width: 900px;
+        max-height: 80vh;
+        overflow: auto;
+        box-shadow: var(--shadow-light);
+        animation: modalFadeIn 0.3s ease;
+        transition: var(--transition);
+    }
+
+    .modal-content:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    @keyframes modalFadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 32px;
+        font-weight: bold;
+        cursor: pointer;
+        position: absolute;
+        right: 20px;
+        top: 15px;
+        transition: var(--transition);
+    }
+
+    .close:hover {
+        color: var(--danger-color);
+        transform: rotate(90deg);
+    }
+
+    .preview-content {
+        margin-top: 2rem;
+        white-space: pre-wrap;
+        text-align: center;
+    }
+
+    .preview-content img, .preview-content iframe, .preview-content audio, .preview-content video {
+        max-width: 100%;
+        border-radius: 8px;
+        box-shadow: var(--shadow-light);
+    }
+
+    .preview-content iframe { height: 60vh; border: none; }
+    .preview-content audio, .preview-content video { max-width: 600px; display: block; margin: 0 auto; }
+
+    /* 按钮通用样式 */
+    #downloadBtn {
+        margin: 0; /* 移除多余边距，确保与标题对齐 */
+    }
+    .preview-btn, .download-btn, .delete-btn, #downloadBtn, .action-btn, #confirmBtn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        transition: var(--transition);
+        box-shadow: var(--shadow-light);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .preview-btn { background: linear-gradient(135deg, #4686e1, #7b3fe4); color: #fff; }
+    .download-btn, #downloadBtn { background: linear-gradient(135deg, #34c759, #21a54c); color: #fff; }
+    .delete-btn { background: linear-gradient(135deg, #ff3b30, #d81b60); color: #fff; }
+    .action-btn, #confirmBtn { background: linear-gradient(135deg, #4686e1, #7b3fe4); color: #fff; }
+
+    .preview-btn:hover, .download-btn:hover, .delete-btn:hover, #downloadBtn:hover, .action-btn:hover, #confirmBtn:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .preview-btn:hover { background: linear-gradient(135deg, #7b3fe4, #4686e1); }
+    .download-btn:hover, #downloadBtn:hover { background: linear-gradient(135deg, #21a54c, #34c759); }
+    .delete-btn:hover { background: linear-gradient(135deg, #d81b60, #ff3b30); }
+    .action-btn:hover, #confirmBtn:hover { background: linear-gradient(135deg, #7b3fe4, #4686e1); }
+
+    .preview-btn:active, .download-btn:active, .delete-btn:active, #downloadBtn:active, .action-btn:active, #confirmBtn:active {
+        transform: translateY(1px);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .preview-btn::before, .download-btn::before, .delete-btn::before, #downloadBtn::before, .action-btn::before, #confirmBtn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.3);
+        transition: all 0.5s ease;
+        transform: skewX(-20deg);
+    }
+
+    .preview-btn:hover::before, .download-btn:hover::before, .delete-btn:hover::before, #downloadBtn:hover::before, .action-btn:hover::before, #confirmBtn:hover::before {
+        left: 100%;
+    }
+
+    .preview-btn:disabled, .download-btn:disabled, .delete-btn:disabled, #downloadBtn:disabled, #confirmBtn:disabled {
+        background: linear-gradient(135deg, #a0a0a0, #808080);
+        color: #d0d0d0;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    /* 数据列表和采集卡片 */
+    .data-list, .collection-card {
+        background: linear-gradient(135deg, #f9f9f9, #e8ecef);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--shadow-light);
+    }
+
+    .collection-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+    }
+
+    .collection-card:hover {
+        transform: translateY(-10px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    .collection-icon {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        transition: transform 0.3s ease;
+    }
+
+    .collection-card:hover .collection-icon {
+        transform: scale(1.2);
+    }
+
+    .collection-card h3 {
+        font-size: 1.2rem;
+        color: #333;
+        margin-bottom: 1rem;
+    }
+
+    .collection-card p {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 1.5rem;
+    }
+
+    /* 表单样式 */
+    .config-form {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-width: 400px;
+    }
+
+    .form-group label {
+        font-size: 1.1rem;
+        color: #333;
+        font-weight: 500;
+    }
+
+    .form-group .required {
+        color: var(--danger-color);
+        font-size: 1rem;
+        margin-left: 5px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+        padding: 10px;
+        border: 1px solid #eee;
+        border-radius: 6px;
+        font-size: 14px;
+        background: #f9f9f9;
+        transition: var(--transition);
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 5px rgba(24, 144, 255, 0.5);
+        transform: scale(1.02);
+        outline: none;
+    }
+
+    .form-textarea {
+        height: 100px;
+        resize: vertical;
+    }
+
+    .custom-file-upload { display: flex; align-items: center; gap: 10px; }
+
+    .custom-file-input {
+        display: none;
+    }
+
+    .custom-file-button {
+        padding: 8px 16px;
+        background: linear-gradient(135deg, #4686e1, #7b3fe4);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: var(--transition);
+        box-shadow: var(--shadow-light);
+        position: relative;
+        overflow: hidden;
+    }
+    .custom-file-button:hover {
+        background: linear-gradient(135deg, #7b3fe4, #4686e1);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+    }
+    .custom-file-button:active { transform: translateY(1px); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); }
+    .custom-file-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.3);
+        transition: all 0.5s ease;
+        transform: skewX(-20deg);
+    }
+    .custom-file-button:hover::before { left: 100%; }
+
+    .file-name-display {
+        padding: 8px 12px;
+        background: #f9f9f9;
+        border: 1px solid #eee;
+        border-radius: 6px;
+        font-size: 14px;
+        color: #666;
+        flex-grow: 1;
+        transition: var(--transition);
+    }
+    .file-name-display.active { color: #333; border-color: var(--primary-color); }
+
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        .custom-file-upload { flex-direction: column; align-items: flex-start; }
+    }
+
+    .custom-file-label {
+        padding: 10px 16px;
+        background-color: #3498db;
+        color: #fff;
+        border-radius: 6px;
+        cursor: pointer;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.3s ease;
+    }
+
+    .custom-file-label:hover {
+        background-color: #2980b9;
+    }
+
+    .custom-file-label:active {
+        background-color: #1f6a9e;
+    }
+
+    .form-input::placeholder {
+        color: #95a5a6;
+        font-style: italic;
+    }
+
+    .form-input:disabled {
+        background-color: #ecf0f1;
+        color: #7f8c8d;
+        cursor: not-allowed;
+        border-color: #dcdcdc;
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+        main { padding: 1rem; }
+        nav ul { gap: 1rem; justify-content: center; }
+        nav ul li, a.active { font-size: 16px; }
+        section, .data-collection { padding: 1.5rem; }
+        .modal-content { width: 85%; padding: 1.5rem; }
+        .config-form { gap: 1rem; }
+        .form-input, .form-select, .form-textarea { font-size: 12px; }
+        #downloadBtn, #confirmBtn { padding: 8px 16px; font-size: 12px; }
+    }
+
+    @media (max-width: 480px) {
+        nav ul { flex-direction: column; gap: 1.5rem; }
+        nav ul li, a.active { font-size: 14px; }
+        .modal-content { width: 95%; padding: 1rem; }
+        .form-group label { font-size: 0.9rem; }
+        #downloadBtn { padding: 6px 10px; font-size: 12px; }
+    }
+    .task-status {
+        background: var(--gradient-bg);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        padding: 2rem;
+        margin-bottom: 2.5rem;
+    }
+    .task-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .task-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: #fff;
+        border-radius: 6px;
+        box-shadow: var(--shadow-light);
+        transition: var(--transition);
+    }
+    .task-item:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-hover);
+    }
+    .task-item .status {
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+    }
+    .task-item .status.pending { background: #ffd700; color: #333; }
+    .task-item .status.running { background: #1890ff; color: #fff; }
+    .task-item .status.success { background: #34c759; color: #fff; }
+    .task-item .status.failed { background: #ff3b30; color: #fff; }
+
+    .task-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    .task-header h2 {
+        margin-bottom: 0; /* 移除默认的下边距 */
+        border-bottom: none; /* 可选：移除下划线，保持简洁 */
+    }
+    .clear-history-btn {
+        padding: 10px 20px; /* 与其他按钮保持一致的内边距 */
+        background: linear-gradient(135deg, #ff9800, #f44336); /* 橙红渐变，醒目且温暖 */
+        color: #fff;
+        border: none;
+        border-radius: 6px; /* 统一圆角 */
+        cursor: pointer;
+        font-size: 14px; /* 与其他按钮字体大小一致 */
+        font-weight: 500;
+        text-transform: uppercase; /* 大写字母增强可读性 */
+        letter-spacing: 1.2px; /* 字符间距优化 */
+        transition: var(--transition); /* 使用全局过渡变量 */
+        box-shadow: var(--shadow-light); /* 默认轻阴影 */
+        position: relative; /* 为伪元素定位 */
+        overflow: hidden; /* 隐藏光晕溢出 */
+    }
+
+    /* 悬停效果 */
+    .clear-history-btn:hover {
+        background: linear-gradient(135deg, #f44336, #ff9800); /* 反向渐变，增加动态感 */
+        transform: translateY(-3px); /* 轻微上移，与其他按钮一致 */
+        box-shadow: var(--shadow-hover); /* 增强阴影 */
+    }
+
+    /* 点击效果 */
+    .clear-history-btn:active {
+        transform: translateY(1px); /* 下沉效果 */
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* 点击时阴影减弱 */
+    }
+
+    /* 光晕动画 */
+    .clear-history-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.3); /* 白色光晕 */
+        transition: all 0.5s ease; /* 光晕移动速度 */
+        transform: skewX(-20deg); /* 倾斜光晕，增加动感 */
+    }
+
+    .clear-history-btn:hover::before {
+        left: 100%; /* 光晕从左到右滑动 */
+    }
+
+    /* 禁用状态 */
+    .clear-history-btn:disabled {
+        background: linear-gradient(135deg, #a0a0a0, #808080); /* 灰色渐变 */
+        color: #d0d0d0;
+        cursor: not-allowed;
+        box-shadow: none;
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 768px) {
+        .clear-history-btn {
+            padding: 8px 16px; /* 小屏幕缩小内边距 */
+            font-size: 12px; /* 减小字体 */
+        }
+    }
+    .header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    .header-section h2 {
+        margin-bottom: 0; /* 移除默认的下边距 */
+        border-bottom: none; /* 可选：移除下划线，保持简洁 */
+    }
+    /* 自定义提示弹窗 */
+    .notification-modal {
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(2px);
+    }
+
+    .notification-content {
+        background: linear-gradient(135deg, #ffffff, #f9f9f9);
+        margin: 20% auto;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        width: 90%;
+        max-width: 400px;
+        box-shadow: var(--shadow-light);
+        text-align: center;
+        position: relative;
+        animation: notificationFadeIn 0.3s ease;
+        transition: var(--transition);
+    }
+
+    .notification-content:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-hover);
+    }
+
+    @keyframes notificationFadeIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .notification-close {
+        color: #aaa;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        position: absolute;
+        right: 15px;
+        top: 10px;
+        transition: var(--transition);
+    }
+
+    .notification-close:hover {
+        color: var(--danger-color);
+        transform: rotate(90deg);
+    }
+
+    .notification-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    .notification-icon.success {
+        color: #34c759;
+    }
+
+    .notification-icon.error {
+        color: var(--danger-color);
+    }
+
+    .notification-message {
+        font-size: 1.1rem;
+        color: #333;
+    }
+
+    /* 响应式调整 */
+    @media (max-width: 480px) {
+        .notification-content {
+            width: 95%;
+            padding: 1rem;
+        }
+        .notification-icon {
+            font-size: 2.5rem;
+        }
+        .notification-message {
+            font-size: 1rem;
+        }
+    }
+    .connection-status {
+        background: linear-gradient(135deg, #f9f9f9, #e8ecef);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light);
+        padding: 1rem;
+        font-size: 1.1rem;
+        color: #666;
+        transition: var(--transition);
+    }
+
+    .connection-status:hover {
+        box-shadow: var(--shadow-hover);
+    }
+    /* 加载动画样式 */
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .spinner i {
+        animation: spin 1s linear infinite;
+    }
+
+    /* 禁用状态样式 */
+    button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    button:disabled::before {
+        display: none !important;
+    }
+</style>
+
+<body>
+<!-- 页面顶部 -->
+<header>
+    <!-- 导航 -->
+    <nav>
+        <!-- 无序列表 -->
+        <ul>
+            <!-- 返回按钮 -->
+            <li><a href="IndexSystem.html?uroot=0" title="返回主页面"><i class="fas fa-arrow-left"></i>返回主页面</a></li>
+            <!-- 第一个导航 -->
+            <li><a href="DataAdministrationSystem.html?uroot=0"><i class="fas fa-home"></i> 首页</a></li>
+            <!-- 数据采集导航 -->
+            <li><a href="DataCollection.html?uroot=0" class="active"><i class="fas fa-stream"></i> 数据采集</a></li>
+            <!-- 数据清洗导航 -->
+            <li><a href="DataCleaning.html?uroot=0"><i class="fas fa-filter"></i> 数据处理 </a></li>
+        </ul>
+    </nav>
+</header>
+
+<!-- 页面主内容 -->
+<main>
+    <section class="task-status">
+        <div class="task-header">
+            <h2>采集任务状态</h2>
+            <button class="clear-history-btn">清除历史</button>
+        </div>
+        <div id="taskList" class="task-list"></div>
+    </section>
+
+    <!-- 数据采集 -->
+    <section class="data-collection">
+        <h2>数据源</h2>
+        <div class="collection-container">
+            <!-- 本地导入 -->
+            <div class="collection-card" data-source="local">
+                <i class="fas fa-file-upload collection-icon"></i>
+                <h3>本地导入</h3>
+                <p>支持从本地文件系统上传文件（如 CSV、JSON 等）以导入数据。</p>
+                <button class="action-btn">开始导入</button>
+            </div>
+
+            <div class="collection-card" data-source="websocket">
+                <i class="fas fa-exchange-alt collection-icon"></i>
+                <h3>WebSocket</h3>
+                <p>通过 WebSocket 协议实时采集数据，适用于高频数据流。</p>
+                <button class="action-btn">启动监听</button>
+            </div>
+            <!-- API 调用 -->
+            <div class="collection-card" data-source="api">
+                <i class="fas fa-cloud collection-icon"></i>
+                <h3>API 调用</h3>
+                <p>通过 HTTP/RESTful API 从外部系统或云服务采集数据。</p>
+                <button class="action-btn">添加 API</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 文件列表 -->
+    <section class="data-list">
+        <div class="header-section">
+            <h2>文件列表</h2>
+<!--            <button id="downloadBtn">一键下载</button>-->
+        </div>
+        <table id="dataTable">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>文件名称</th>
+                <th>文件类型</th>
+                <th>文件大小</th>
+                <th>上传日期</th>
+                <th>文件操作</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </section>
+</main>
+
+<!-- 预览弹窗 -->
+<div id="previewModal" class="modal">
+    <div class="modal-content">
+        <span class="close">×</span>
+        <div id="previewContent" class="preview-content"></div>
+    </div>
+</div>
+
+<!-- 配置模态框 -->
+<div id="configModal" class="modal">
+    <div class="modal-content">
+        <span class="close">×</span>
+        <h2 id="modalTitle">配置数据源</h2>
+        <div id="configForm" class="config-form"></div>
+        <button id="confirmBtn">确认</button>
+    </div>
+</div>
+
+<!-- 自定义提示弹窗 -->
+<div id="notificationModal" class="notification-modal">
+    <div class="notification-content">
+        <span class="notification-close">×</span>
+        <div class="notification-icon"></div>
+        <div class="notification-message"></div>
+    </div>
+</div>
+
+<!--JSON 的语法高亮-->
+<script src="js/sources/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // 全局状态
+        const state = {
+            fileList: [],
+            tasks: new Map(),
+            wsConnections: new Map(),
+            tokenSent: new Map(), // 跟踪哪些客户端已发送令牌
+            receivedFiles: [] // 存储接收到的文件
+        };
+
+        // DOM 元素
+        const elements = {
+            configModal: document.getElementById('configModal'),
+            modalTitle: document.getElementById('modalTitle'),
+            configForm: document.getElementById('configForm'),
+            confirmBtn: document.getElementById('confirmBtn'),
+            previewModal: document.getElementById('previewModal'),
+            previewContent: document.getElementById('previewContent'),
+            taskList: document.getElementById('taskList'),
+            downloadBtn: document.getElementById('downloadBtn'),
+            dataTableBody: document.querySelector('#dataTable tbody')
+        };
+
+        // 数据源配置模板
+        const configTemplates = {
+            local: `
+            <div class="form-group">
+                <label for="fileInput">选择文件 <span class="required">*</span></label>
+                <div class="custom-file-upload">
+                    <input type="file" id="fileInput" class="custom-file-input" multiple accept=".csv,.json,.txt,.xml,.xlsx" required>
+                    <button type="button" class="custom-file-button">选择文件</button>
+                    <span class="file-name-display">未选择文件</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="uploadPath">上传路径</label>
+                <input type="text" id="uploadPath" class="form-input" placeholder="默认路径: /original_data/">
+            </div>
+        `,
+            websocket: `
+        <div class="form-group">
+            <label for="wsUrl">数据源地址（Socket） <span class="required">*</span></label>
+            <input type="text" id="wsUrl" class="form-input" placeholder="e.g., 127.0.0.1:9999" value="127.0.0.1:9999" required>
+        </div>
+        <div class="form-group">
+            <label for="collectTime">采集时间（秒）</label>
+            <input type="number" id="collectTime" class="form-input" min="1" placeholder="默认 5 秒" value="5">
+        </div>
+    `,
+            api: `
+                <div class="form-group">
+                    <label>客户端连接状态</label>
+                    <div id="connectionStatus" class="connection-status" style="text-align: center; margin-top: 1rem; min-height: 50px; display: flex; align-items: center; justify-content: center;">
+                        <span id="connectionMessage">当前无客户端连接</span>
+                    </div>
+                    <div id="receivedFiles" style="display: none; margin-top: 1rem; text-align: left;">
+                        <label>接收到的文件</label>
+                        <ul id="receivedFilesList" style="list-style: none; padding: 0; margin: 0;"></ul>
+                    </div>
+                </div>
+            `,
+        };
+
+        // 事件监听
+        function setupEventListeners() {
+            document.querySelectorAll('.collection-card .action-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const card = btn.closest('.collection-card');
+                    const source = card.getAttribute('data-source');
+                    elements.modalTitle.textContent = `配置${card.querySelector('h3').textContent}`;
+                    elements.configForm.innerHTML = configTemplates[source] || '';
+                    elements.configModal.style.display = 'block';
+                    elements.confirmBtn.dataset.source = source;
+
+                    if (source === 'local') {
+                        const fileInput = document.getElementById('fileInput');
+                        const fileButton = document.querySelector('.custom-file-button');
+                        const fileNameDisplay = document.querySelector('.file-name-display');
+
+                        fileButton.addEventListener('click', () => fileInput.click());
+                        fileInput.addEventListener('change', () => {
+                            if (fileInput.files.length > 0) {
+                                const fileNames = Array.from(fileInput.files).map(file => file.name).join(', ');
+                                fileNameDisplay.textContent = fileNames;
+                                fileNameDisplay.classList.add('active');
+                            } else {
+                                fileNameDisplay.textContent = '未选择文件';
+                                fileNameDisplay.classList.remove('active');
+                            }
+                        });
+                    }
+                });
+            });
+
+            document.querySelector('.clear-history-btn').addEventListener('click', () => {
+                state.tasks.clear();
+                localStorage.removeItem('taskHistory');
+                renderTasks();
+            });
+
+            elements.configModal.querySelector('.close').addEventListener('click', () => elements.configModal.style.display = 'none');
+            window.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && elements.configModal.style.display === 'block') elements.configModal.style.display = 'none';
+            });
+
+            elements.confirmBtn.addEventListener('click', handleCollect);
+
+            document.addEventListener('click', e => {
+                if (e.target.classList.contains('preview-btn')) previewFile(e.target.getAttribute('data-filename'));
+            });
+            elements.previewModal.querySelector('.close').addEventListener('click', closePreviewModal);
+            window.addEventListener('click', e => {
+                if (e.target === elements.previewModal) closePreviewModal();
+            });
+            window.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && elements.previewModal.style.display === 'block') closePreviewModal();
+            });
+
+            // elements.downloadBtn.addEventListener('click', handleDownloadAll);
+        }
+
+        async function handleCollect() {
+            const source = elements.confirmBtn.dataset.source;
+            elements.confirmBtn.disabled = true;
+            elements.confirmBtn.textContent = '采集中...';
+
+            const taskId = `task-${Date.now()}`;
+            addTask(taskId, source, 'running', '正在采集...');
+
+            try {
+                let isValid = true;
+                let files;
+
+                switch (source) {
+                    case 'local':
+                        isValid = validateLocalForm();
+                        if (isValid) files = await collectLocalFiles();
+                        break;
+                    case 'websocket': {
+                        const wsForm = validateWebSocketForm(taskId);
+                        isValid = !!wsForm;
+                        if (isValid) files = await collectFromWebSocket(taskId, wsForm);
+                        break;
+                    }
+                    case 'api':
+                        isValid = validateApiForm(taskId);
+                        if (isValid) {
+                            files = await simulateApiCollection(taskId);
+                            return; // API 模式持续监听，不关闭模态框
+                        }
+                        break;
+                    default:
+                        throw new Error('未知的数据源');
+                }
+
+                if (isValid) {
+                    // WebSocket 采集已在内部写入详细结果，此处不再覆盖
+                    if (source !== 'websocket') {
+                        updateTask(taskId, 'success', '采集完成');
+                    }
+                    updateFileList(files); // 仅用于本地和 WebSocket
+                    elements.configModal.style.display = 'none';
+                }
+            } catch (error) {
+                updateTask(taskId, 'failed', `采集失败: ${error.message}`);
+            } finally {
+                if (source !== 'api') {
+                    elements.confirmBtn.disabled = false;
+                    elements.confirmBtn.textContent = '确认';
+                }
+            }
+        }
+
+        function addTask(id, source, status, message) {
+            state.tasks.set(id, {
+                source,
+                status,
+                message,
+                startTime: new Date(),
+                endTime: null,
+                files: null,
+                errorDetails: null
+            });
+            renderTasks();
+        }
+
+        function updateTask(id, status, message, files = null, errorDetails = null) {
+            if (state.tasks.has(id)) {
+                const task = state.tasks.get(id);
+                state.tasks.set(id, {
+                    ...task,
+                    status,
+                    message,
+                    endTime: (status === 'success' || status === 'failed') ? new Date() : task.endTime,
+                    files: files || task.files,
+                    errorDetails: errorDetails || task.errorDetails
+                });
+                localStorage.setItem('taskHistory', JSON.stringify(Object.fromEntries(state.tasks)));
+                renderTasks();
+            }
+        }
+
+        function renderTasks() {
+            elements.taskList.innerHTML = [...state.tasks].map(([id, task]) => {
+                let detailedMessage = task.message;
+                if (task.status === 'success' && task.files) {
+                    const fileCount = task.files.length;
+                    const totalSize = task.files.reduce((sum, file) => sum + (file.size || 0), 0);
+                    const duration = task.endTime && task.startTime ? ((task.endTime - task.startTime) / 1000).toFixed(1) : '未知';
+                    detailedMessage = `${task.source.charAt(0).toUpperCase() + task.source.slice(1)} 数据采集成功：保存 ${fileCount} 个文件，总大小 ${totalSize} 字节，耗时 ${duration} 秒`;
+                } else if (task.status === 'failed' && task.errorDetails) {
+                    detailedMessage = `${task.source.charAt(0).toUpperCase() + task.source.slice(1)} 数据采集失败：${task.errorDetails.message}`;
+                }
+                const startTimeStr = task.startTime ? task.startTime.toLocaleString() : '未知时间';
+                return `
+            <div class="task-item">
+                <span>${task.source.charAt(0).toUpperCase() + task.source.slice(1)} 数据采集 (${startTimeStr})</span>
+                <span class="status ${task.status}">${detailedMessage}</span>
+            </div>
+        `;
+            }).join('');
+        }
+
+        function loadTaskHistory() {
+            const savedTasks = JSON.parse(localStorage.getItem('taskHistory')) || {};
+            state.tasks = new Map(
+                Object.entries(savedTasks).map(([id, task]) => {
+                    return [
+                        id,
+                        {
+                            ...task,
+                            startTime: task.startTime ? new Date(task.startTime) : null,
+                            endTime: task.endTime ? new Date(task.endTime) : null
+                        }
+                    ];
+                })
+            );
+            renderTasks();
+        }
+        loadTaskHistory();
+
+        function validateLocalForm() {
+            const fileInput = document.getElementById('fileInput');
+            if (!fileInput.files.length) {
+                showError(fileInput, '请选择至少一个文件');
+                return false;
+            }
+            return true;
+        }
+
+        async function collectLocalFiles() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadPath = document.getElementById('uploadPath').value || '/original_data/';
+            const files = fileInput.files;
+            if (!files.length) throw new Error('请选择文件');
+
+            const formData = new FormData();
+            for (const file of files) {
+                formData.append('files', file);
+            }
+            formData.append('path', uploadPath);
+
+            const response = await fetch('/HDFS/uploadToHDFS', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('文件上传失败');
+            const result = await response.json();
+            return result.files;
+        }
+
+        function validateWebSocketForm(taskId) {
+
+            const wsUrlInput = document.getElementById('wsUrl').value.trim();
+            const defaultWsUrl = "127.0.0.1:9999";
+            const wsUrl = wsUrlInput === "" ? defaultWsUrl : wsUrlInput;
+
+            const collectTimeInput = document.getElementById('collectTime').value;
+            const collectTime = collectTimeInput ? parseInt(collectTimeInput, 10) : 5;
+
+            // 允许 127.0.0.1:9999、ws://127.0.0.1:9999、tcp://127.0.0.1:9999 三种写法
+            const addrPattern = /^(?:(?:wss?|tcp):\/\/)?[^\s:\/]+:\d{1,5}$/;
+            if (!addrPattern.test(wsUrl)) {
+                updateTask(taskId, 'failed', '数据源地址格式不正确，正确示例：127.0.0.1:9999');
+                return false;
+            }
+
+            if (isNaN(collectTime) || collectTime < 1) {
+                updateTask(taskId, 'failed', '采集时间必须是大于 0 的整数');
+                return false;
+            }
+
+            return { wsUrl, collectTime };
+        }
+
+        async function collectFromWebSocket(taskId, form) {
+            if (!form) {
+                form = validateWebSocketForm(taskId);
+                if (!form) {
+                    throw new Error('参数校验未通过');
+                }
+            }
+
+            // 显示加载状态
+            showLoading(true);
+
+            try {
+                updateTask(taskId, 'running', `正在从 ${form.wsUrl} 采集数据，预计耗时 ${form.collectTime} 秒`);
+
+                // 真实调用后端 TCP 采集接口：设备端上报 -> 服务端接收 -> 落库 HDFS
+                const response = await fetch('/WebSocket/collect/tcp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        taskId: taskId,
+                        wsUrl: form.wsUrl,
+                        duration: form.collectTime,
+                        rowsPerSec: 5
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || result.status !== 'success') {
+                    throw new Error(result.message || '采集失败');
+                }
+
+                updateTask(taskId, 'success',
+                    `采集完成：${result.fileName}，共 ${result.dataCount} 条数据，已存入 ${result.filePath}`);
+
+                // 刷新 HDFS 原始数据文件列表
+                refreshFileList();
+
+                return [];
+            } catch (error) {
+                updateTask(taskId, 'failed', `采集失败: ${error.message}`);
+                throw error;
+            } finally {
+                // 无论成功失败都隐藏加载状态
+                showLoading(false);
+            }
+        }
+
+        function refreshFileList() {
+            try {
+                if (typeof fetchData === 'function') {
+                    fetchData();
+                }
+            } catch (e) {
+                console.warn('刷新文件列表失败:', e);
+            }
+        }
+
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay') || createLoadingOverlay();
+            overlay.style.display = show ? 'flex' : 'none';
+
+            // // 禁用/启用所有按钮
+            // document.querySelectorAll('button').forEach(btn => {
+            //     btn.disabled = show;
+            // });
+        }
+
+        function createLoadingOverlay() {
+            const overlay = document.createElement('div');
+            overlay.id = 'loadingOverlay';
+            overlay.style = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    `;
+            overlay.innerHTML = `
+        <div style="background: white; padding: 2rem; border-radius: 10px; text-align: center;">
+            <div class="spinner" style="font-size: 3rem; margin-bottom: 1rem;">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <p>数据采集中，请稍候...</p>
+        </div>
+    `;
+            document.body.appendChild(overlay);
+            return overlay;
+        }
+
+        function validateApiForm(taskId) {
+            return true;
+        }
+
+        async function simulateApiCollection(taskId) {
+            console.log('初始化模拟 API 采集，taskId:', taskId);
+
+            // 确保 DOM 元素已加载
+            const connectionStatus = document.getElementById('connectionStatus');
+            if (!connectionStatus) {
+                console.error('未找到 connectionStatus 元素');
+                updateTask(taskId, 'failed', '界面初始化失败');
+                return [];
+            }
+
+            // 模拟初始客户端列表（仅一次）
+            const initialClients = generateRandomClients(2); // 初始 0-2 个客户端
+            updateClientList(initialClients);
+            updateTask(taskId, 'running', '已初始化客户端列表');
+            console.log('[模拟 API] 服务状态: 已开启，客户端列表已加载:', initialClients);
+
+            // 模拟事件
+            let filesCollected = [];
+
+            return new Promise((resolve) => {
+                // 持续监听 20 秒，但不刷新列表
+                setTimeout(() => {
+                    updateTask(taskId, 'success', 'API 模拟监听结束');
+                    console.log('[模拟 API] 服务状态: 监听结束');
+                    state.wsConnections.delete(taskId);
+                    resolve(filesCollected);
+                }, 20000);
+            });
+        }
+        // 辅助函数：生成随机客户端列表
+        function generateRandomClients(count) {
+            const clients = [];
+            for (let i = 0; i < count; i++) {
+                clients.push({ ip: generateRandomIp() });
+            }
+            return clients;
+        }
+        // 辅助函数：生成随机 IP
+        function generateRandomIp() {
+            return `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+        }
+        /*async function collectFromApi(taskId) {
+            console.log('初始化 API 采集，taskId:', taskId);
+
+            return new Promise((resolve) => {
+                fetch('/getConnections', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                })
+                    .then(response => {
+                        if (!response.ok) throw new Error('获取客户端列表失败');
+                        return response.json();
+                    })
+                    .then(clients => {
+                        updateClientList(clients);
+                        updateTask(taskId, 'running', '已初始化客户端列表监听');
+                    })
+                    .catch(error => {
+                        updateTask(taskId, 'failed', `初始化失败: ${error.message}`);
+                    });
+
+                const ws = new WebSocket('ws://10.5.0.66:8081/frontend');
+                state.wsConnections.set(taskId, ws);
+
+                ws.onopen = () => {
+                    console.log('WebSocket 连接成功');
+                    updateTask(taskId, 'running', '正在监听客户端连接...');
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'connectionUpdate') {
+                        updateClientList(data.clients);
+                        updateTask(taskId, 'running', `客户端列表更新: ${data.clients.length} 个客户端`);
+                    } else if (data.type === 'tokenRequest') {
+                        showTokenRequest(data.clientIp);
+                        updateTask(taskId, 'running', `收到来自 ${data.clientIp} 的令牌请求`);
+                    } else if (data.type === 'fileReceived') {
+                        showFileReceived(data.clientIp, data.fileName);
+                        updateTask(taskId, 'running', `收到文件: ${data.fileName} 从 ${data.clientIp}`);
+                        const newFile = { name: data.fileName, type: 'unknown', size: 0, modifyTime: new Date().toISOString() };
+                        resolve([newFile]);
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    updateTask(taskId, 'failed', 'WebSocket 连接错误');
+                    console.error('WebSocket 错误:', error);
+                };
+
+                ws.onclose = () => {
+                    updateTask(taskId, 'success', 'API 监听结束');
+                    state.wsConnections.delete(taskId);
+                    resolve([]);
+                };
+
+                const sendTokenBtn = document.getElementById('sendTokenBtn');
+                if (sendTokenBtn) {
+                    sendTokenBtn.onclick = () => {
+                        const clientIp = document.getElementById('requestClientIp').textContent;
+                        const token = document.getElementById('tokenInput').value.trim();
+                        if (token) {
+                            sendToken(clientIp, token);
+                            updateTask(taskId, 'running', `已发送令牌 ${token} 给 ${clientIp}`);
+                        } else {
+                            showNotification('请输入令牌', 'error');
+                        }
+                    };
+                }
+            });
+        }*/
+
+        // 更新客户端列表
+        function updateClientList(clients) {
+            const connectionStatus = document.getElementById('connectionStatus');
+            if (connectionStatus) {
+                if (clients && clients.length > 0) {
+                    connectionStatus.innerHTML = `
+                        <ul style="list-style: none; padding: 0; margin: 0; text-align: left; width: 100%;">
+                            ${clients.map(client => `
+                                <li style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <span>客户端 IP: ${client.ip}</span>
+                                    <button class="send-token-btn action-btn" data-ip="${client.ip}" style="margin-left: 1rem;">
+                                        ${state.tokenSent.get(client.ip) ? '已发送令牌' : '发送令牌'}
+                                    </button>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `;
+                    // 绑定“发送令牌”按钮事件
+                    document.querySelectorAll('.send-token-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const ip = btn.getAttribute('data-ip');
+                            if (!state.tokenSent.get(ip)) {
+                                state.tokenSent.set(ip, true);
+                                btn.textContent = '已发送令牌';
+                                btn.disabled = true;
+                                startFileReceiving(ip);
+                            }
+                        });
+                    });
+                } else {
+                    connectionStatus.innerHTML = '<span id="connectionMessage">当前无客户端连接</span>';
+                }
+            } else {
+                console.error('无法找到 connectionStatus 元素');
+            }
+        }
+        // 开始接收文件
+        function startFileReceiving(clientIp) {
+            const taskId = `task-receive-${clientIp}-${Date.now()}`;
+            updateTask(taskId, 'running', `开始从 ${clientIp} 接收文件`);
+            console.log(`[模拟 API] 开始从 ${clientIp} 接收文件`);
+
+            const intervalId = setInterval(() => {
+                const fileName = `file_${clientIp}_${Date.now()}.txt`;
+                const newFile = {
+                    name: fileName,
+                    type: 'txt',
+                    size: Math.floor(Math.random() * 10000),
+                    modifyTime: new Date().toISOString()
+                };
+                state.receivedFiles.push(newFile);
+                updateReceivedFiles();
+                updateTask(taskId, 'running', `收到文件: ${fileName} 从 ${clientIp}`);
+                console.log('[模拟 API] 文件接收:', newFile);
+            }, 3000); // 每 3 秒接收一个文件
+
+            // 模拟接收 3 个文件后停止（10 秒）
+            setTimeout(() => {
+                clearInterval(intervalId);
+                updateTask(taskId, 'success', `从 ${clientIp} 接收文件完成`);
+                console.log(`[模拟 API] 从 ${clientIp} 接收文件完成`);
+            }, 10000);
+        }
+
+        // 更新接收文件区域
+        function updateReceivedFiles() {
+            const receivedFilesDiv = document.getElementById('receivedFiles');
+            const receivedFilesList = document.getElementById('receivedFilesList');
+            if (receivedFilesDiv && receivedFilesList) {
+                receivedFilesDiv.style.display = 'block';
+                receivedFilesList.innerHTML = state.receivedFiles.map(file => `
+                    <li style="margin-bottom: 0.5rem;">
+                        ${file.name} (${file.size} B, ${new Date(file.modifyTime).toLocaleTimeString()})
+                    </li>
+                `).join('');
+            } else {
+                console.error('无法找到 receivedFiles 或 receivedFilesList 元素');
+            }
+        }
+
+        function showTokenRequest(clientIp) {
+            const tokenSection = document.getElementById('tokenSection');
+            const requestClientIp = document.getElementById('requestClientIp');
+            if (tokenSection && requestClientIp) {
+                requestClientIp.textContent = clientIp;
+                tokenSection.style.display = 'block';
+            }
+        }
+
+        function sendToken(clientIp, token) {
+            fetch('/sendToken', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clientIp, token })
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('发送令牌失败');
+                    return response.text();
+                })
+                .then(result => {
+                    showNotification('令牌发送成功', 'success');
+                    document.getElementById('tokenSection').style.display = 'none';
+                    document.getElementById('tokenInput').value = '';
+                })
+                .catch(error => showNotification(`发送令牌失败: ${error.message}`, 'error'));
+        }
+
+        function showFileReceived(clientIp, fileName) {
+            const fileStatus = document.getElementById('fileStatus');
+            const fileNameSpan = document.getElementById('fileName');
+            if (fileStatus && fileNameSpan) {
+                fileNameSpan.textContent = fileName;
+                fileStatus.style.display = 'block';
+            }
+        }
+        function showError(input, message) {
+            let errorMessage = input.parentElement.querySelector('.error-message');
+            if (!errorMessage) {
+                errorMessage = document.createElement('span');
+                errorMessage.className = 'error-message';
+                errorMessage.style.color = 'var(--danger-color)';
+                input.parentElement.appendChild(errorMessage);
+            }
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function showNotification(message, type = 'success') {
+            const notificationModal = document.getElementById('notificationModal');
+            const notificationContent = notificationModal.querySelector('.notification-content');
+            const notificationIcon = notificationContent.querySelector('.notification-icon');
+            const notificationMessage = notificationContent.querySelector('.notification-message');
+            const notificationClose = notificationContent.querySelector('.notification-close');
+
+            notificationIcon.innerHTML = type === 'success' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-circle"></i>';
+            notificationIcon.className = `notification-icon ${type}`;
+            notificationMessage.textContent = message;
+
+            notificationModal.style.display = 'block';
+
+            notificationClose.onclick = () => notificationModal.style.display = 'none';
+            notificationModal.onclick = (e) => {
+                if (e.target === notificationModal) notificationModal.style.display = 'none';
+            };
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && notificationModal.style.display === 'block') notificationModal.style.display = 'none';
+            });
+
+            setTimeout(() => notificationModal.style.display = 'none', 3000);
+        }
+
+        // 更新文件列表
+        function updateFileList(newFiles) {
+            if (Array.isArray(newFiles)) {
+                newFiles.forEach(newFile => {
+                    const exists = state.fileList.some(file => file.path === newFile.path);
+                    if (!exists) state.fileList.push(newFile);
+                });
+                updateTable(state.fileList);
+                console.log('文件列表已更新:', state.fileList);
+            } else {
+                console.error('新文件数据格式不正确:', newFiles);
+            }
+        }
+
+        function fetchData() {
+            fetch('/HDFS/ListOriginalDataFiles')
+                .then(response => response.json())
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0].files)) {
+                        state.fileList = data[0].files;
+                        updateTable(state.fileList);
+                    } else {
+                        console.error('返回的数据格式不正确', data);
+                    }
+                })
+                .catch(error => console.error('请求数据失败:', error));
+        }
+
+        function updateTable(files) {
+            elements.dataTableBody.innerHTML = '';
+            if (Array.isArray(files)) {
+                files.forEach((file, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${file.name}</td>
+                <td>${file.type}</td>
+                <td>${file.size} B</td>
+                <td>${new Date(file.modifyTime).toLocaleDateString()}</td>
+                <td>
+                    <button class="preview-btn" data-filename="${file.name}">预览</button>
+                    <button class="download-btn" data-filename="${file.name}">下载</button>
+
+                </td>
+            `;
+                    elements.dataTableBody.appendChild(row);
+
+                    row.querySelector('.download-btn').addEventListener('click', () => window.downloadFile(file.name));
+                });
+            }
+        }
+
+        async function previewFile(filename) {
+            const encodedFilename = encodeURIComponent(filename);
+            elements.previewModal.style.display = 'block';
+            elements.previewContent.innerHTML = '<p>加载中...</p>';
+            try {
+                const response = await fetch(`/HDFS/previewOriginalData/${encodedFilename}`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                if (!response.ok) throw new Error(`HTTP错误: ${response.status} - ${await response.text()}`);
+                const contentType = response.headers.get('content-type');
+                const fileExtension = filename.split('.').pop().toLowerCase();
+
+                if (contentType.includes('text') || ['txt', 'csv', 'json'].includes(fileExtension)) {
+                    const text = await response.text();
+                    if (fileExtension === 'json') {
+                        try {
+                            const jsonData = JSON.parse(text);
+                            const formattedJson = JSON.stringify(jsonData, null, 2);
+                            elements.previewContent.innerHTML = `<pre><code class="language-json">${formattedJson}</code></pre>`;
+                            hljs.highlightElement(elements.previewContent.querySelector('code'));
+                        } catch (e) {
+                            elements.previewContent.textContent = text;
+                        }
+                    } else {
+                        elements.previewContent.textContent = text;
+                    }
+                } else if (contentType.includes('image') || ['jpg', 'png', 'gif'].includes(fileExtension)) {
+                    const blob = await response.blob();
+                    const imageUrl = URL.createObjectURL(blob);
+                    elements.previewContent.innerHTML = `<img src="${imageUrl}" alt="预览图片" />`;
+                } else if (contentType.includes('application/pdf') || fileExtension === 'pdf') {
+                    const blob = await response.blob();
+                    const pdfUrl = URL.createObjectURL(blob);
+                    elements.previewContent.innerHTML = `<iframe src="${pdfUrl}" frameborder="0"></iframe>`;
+                } else if (contentType.includes('audio') || fileExtension === 'mp3') {
+                    const blob = await response.blob();
+                    const audioUrl = URL.createObjectURL(blob);
+                    elements.previewContent.innerHTML = `<audio controls><source src="${audioUrl}" type="audio/mpeg">您的浏览器不支持音频播放。</audio>`;
+                } else if (contentType.includes('video') || fileExtension === 'mp4') {
+                    const blob = await response.blob();
+                    const videoUrl = URL.createObjectURL(blob);
+                    elements.previewContent.innerHTML = `<video controls><source src="${videoUrl}" type="video/mp4">您的浏览器不支持视频播放。</video>`;
+                } else {
+                    elements.previewContent.innerHTML = '<p>不支持的文件格式</p>';
+                }
+            } catch (error) {
+                elements.previewContent.innerHTML = `<div style="color: red">加载文件内容失败: ${error.message}</div>`;
+            }
+        }
+
+        function closePreviewModal() {
+            elements.previewModal.style.display = 'none';
+            elements.previewContent.innerHTML = '';
+            const mediaElements = elements.previewContent.querySelectorAll('img, iframe, audio, video');
+            mediaElements.forEach(element => {
+                if (element.src && element.src.startsWith('blob:')) URL.revokeObjectURL(element.src);
+            });
+        }
+
+        async function handleDownloadAll() {
+            try {
+                const folderPath = '/original_data';
+                elements.downloadBtn.disabled = true;
+                elements.downloadBtn.textContent = '下载中...';
+
+                const url = `/HDFS/downloadAll?folderPath=${encodeURIComponent(folderPath)}`;
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/zip' }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 404) throw new Error('文件夹或文件未找到');
+                    else if (response.status === 500) throw new Error('服务器错误，请稍后重试');
+                    else throw new Error(`下载失败，状态码：${response.status}`);
+                }
+
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let fileName = 'downloaded_files.zip';
+                if (contentDisposition) {
+                    const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+                    if (fileNameMatch && fileNameMatch[1]) fileName = fileNameMatch[1];
+                }
+
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(downloadUrl);
+
+                showNotification('文件下载成功！', 'success');
+            } catch (error) {
+                console.error('下载错误:', error);
+                showNotification(`下载失败：${error.message}`, 'error');
+            } finally {
+                elements.downloadBtn.disabled = false;
+                elements.downloadBtn.textContent = '一键下载';
+            }
+        }
+
+        window.downloadFile = function(fileName) {
+            const downloadUrl = `/HDFS/download/original_data/${fileName}`;
+            const aTag = document.createElement('a');
+            aTag.href = downloadUrl;
+            aTag.download = fileName;
+            document.body.appendChild(aTag);
+            aTag.click();
+            document.body.removeChild(aTag);
+        };
+
+        window.deleteFile = function(fileName) {
+            fetch(`/HDFS/deleteOriginalData/${encodeURIComponent(fileName)}`, { method: 'DELETE' })
+                .then(response => {
+                    if (response.ok) {
+                        showNotification('文件删除成功', 'success');
+                        fetchData();
+                    } else {
+                        showNotification('文件删除失败', 'error');
+                    }
+                })
+                .catch(error => alert('发生错误：' + error));
+        };
+
+        setupEventListeners();
+        fetchData();
+    });
+    function getParameterByName(name, url = window.location.href) {
+        name = name.replace(/[\[\]]/g, '\\$&');
+        var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, ' '));
+    }
+    var uroot = getParameterByName('uroot');
+
+    // // 非法登录校验
+    // if (uroot == null) {
+    //     alert("非法登录");
+    //     window.location.href = "login.html"
+    // }
+</script>
+
+</body>
+</html>
