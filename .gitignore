@@ -2,6 +2,9 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+*.bak
+.workbuddy/xz
+out/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
@@ -12,7 +15,7 @@ target/
 *.imlz
 *.ipr
 .idea/
-out/
+
 
 ### Eclipse ###
 .apt_generated
